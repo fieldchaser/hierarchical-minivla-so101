@@ -125,6 +125,7 @@ def run_dagger_episode(
     policy: HierarchicalStateGoalPolicy,
     learner_steps_per_phase: int = 80,
     learner_grasp_lift_steps: int = 0,
+    learner_transport_steps: int = 0,
     use_observed_phase_events: bool = False,
     learner_stagnation_steps: int = 5,
     learner_action_threshold: float = 0.0002,
@@ -136,6 +137,8 @@ def run_dagger_episode(
         raise ValueError("learner_steps_per_phase must be non-negative")
     if learner_grasp_lift_steps < 0:
         raise ValueError("learner_grasp_lift_steps must be non-negative")
+    if learner_transport_steps < 0:
+        raise ValueError("learner_transport_steps must be non-negative")
 
     records: dict[str, list[np.ndarray | int | float | bool]] = {
         "state_ee_xyz": [],
@@ -178,6 +181,8 @@ def run_dagger_episode(
             learner_budget = learner_steps_per_phase
         elif oracle.phase in (2, 3):
             learner_budget = learner_grasp_lift_steps
+        elif oracle.phase == 4:
+            learner_budget = learner_transport_steps
         else:
             learner_budget = 0
         learner_executed = (

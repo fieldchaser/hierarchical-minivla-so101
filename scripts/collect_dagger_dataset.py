@@ -32,6 +32,7 @@ def main() -> None:
     parser.add_argument("--cube-pos-std", type=float, default=0.006)
     parser.add_argument("--learner-steps-per-phase", type=int, default=80)
     parser.add_argument("--learner-grasp-lift-steps", type=int, default=0)
+    parser.add_argument("--learner-transport-steps", type=int, default=0)
     parser.add_argument("--observed-phase-events", action="store_true")
     parser.add_argument("--learner-stagnation-steps", type=int, default=5)
     parser.add_argument("--learner-action-threshold", type=float, default=0.0002)
@@ -75,6 +76,7 @@ def main() -> None:
             policy,
             learner_steps_per_phase=args.learner_steps_per_phase,
             learner_grasp_lift_steps=args.learner_grasp_lift_steps,
+            learner_transport_steps=args.learner_transport_steps,
             use_observed_phase_events=args.observed_phase_events,
             learner_stagnation_steps=args.learner_stagnation_steps,
             learner_action_threshold=args.learner_action_threshold,
@@ -118,6 +120,7 @@ def main() -> None:
             "cube_pos_std": args.cube_pos_std,
             "learner_steps_per_phase": args.learner_steps_per_phase,
             "learner_grasp_lift_steps": args.learner_grasp_lift_steps,
+            "learner_transport_steps": args.learner_transport_steps,
             "observed_phase_events": args.observed_phase_events,
             "learner_stagnation_steps": args.learner_stagnation_steps,
             "learner_action_threshold": args.learner_action_threshold,

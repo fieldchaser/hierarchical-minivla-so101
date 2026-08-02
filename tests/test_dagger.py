@@ -35,6 +35,10 @@ class DaggerTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "learner_grasp_lift_steps"):
             run_dagger_episode(None, None, learner_grasp_lift_steps=-1)
 
+    def test_negative_transport_budget_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "learner_transport_steps"):
+            run_dagger_episode(None, None, learner_transport_steps=-1)
+
 
 if __name__ == "__main__":
     unittest.main()

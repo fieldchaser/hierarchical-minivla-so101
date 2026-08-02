@@ -70,7 +70,7 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Run DAgger round 2 from the updated policy
 - [x] Target the descend-to-grasp boundary in DAgger round 3
 - [x] Extend on-policy aggregation through grasp and lift
-- [ ] Aggregate on-policy transport and alignment failures
+- [x] Aggregate on-policy transport and alignment failures
 - [ ] Add RGB observations and natural-language goals (Flat MiniVLA)
 - [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
 - [ ] Evaluate unseen layouts and instruction paraphrases
@@ -562,3 +562,70 @@ over. It remains a hierarchical state-policy result rather than a VLA result.
 The next milestone will extend on-policy expert correction into transport and
 focus on object-centered bin alignment. The target is to reduce the eight
 transport failures before replacing state observations with RGB and language.
+
+## Milestone 10: transport DAgger, round 5
+
+Round 5 adds a separate transport learner budget while preserving the default
+behavior of every previous collection command. With a 20-step budget, the
+learner begins moving the held cube toward the bin before the expert takes over
+and labels the remaining object-centered alignment correction.
+
+```bash
+python scripts/collect_dagger_dataset.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --checkpoint checkpoints/hierarchical_state_policy_dagger_grasp_lift_r4.pt \
+  --output-dir data/dagger/round_5_transport \
+  --episodes 30 \
+  --seed-start 1200 \
+  --learner-grasp-lift-steps 20 \
+  --learner-transport-steps 20 \
+  --observed-phase-events
+```
+
+The hybrid collector succeeded in 26/30 attempts (86.67%) and saved 4,522
+expert-labeled states. It contains 2,857 learner-generated states, including
+520 transport states; all earlier rounds had zero learner execution in
+transport.
+
+```bash
+python scripts/train_hierarchical_state_policy.py \
+  --data-dir data/scripted/recovery_mocap_120 \
+             data/dagger/round_1_boundary \
+             data/dagger/round_2_boundary \
+             data/dagger/round_3_descend_grasp \
+             data/dagger/round_4_grasp_lift \
+             data/dagger/round_5_transport \
+  --output checkpoints/hierarchical_state_policy_dagger_transport_r5.pt \
+  --metrics-output results/hierarchical_state_dagger_transport_r5_offline.json \
+  --epochs 300
+```
+
+The six aggregated datasets contain 49,481 steps from 254 successful episodes.
+Training selected epoch 66, with 94.97% validation phase accuracy. Overall
+Cartesian MAE increased from 0.270 mm to 0.336 mm because the new aggregation
+adds harder off-trajectory states.
+
+On the round-5 dataset itself, the new checkpoint lowers transport action MAE
+from 0.453 mm to 0.326 mm and lift MAE from 1.438 mm to 0.929 mm. That local
+improvement does not translate into a better full policy:
+
+| Closed-loop comparison | Grasp/lift R4 | Transport R5 |
+|---|---:|---:|
+| Same unseen seeds 1300-1309 | 9/10 | 7/10 |
+| Same unseen seeds 1400-1429 | 24/30 | 22/30 |
+| Final descend failures, seeds 1400-1429 | 0 | 1 |
+| Final lift failures, seeds 1400-1429 | 2 | 1 |
+| Final transport failures, seeds 1400-1429 | 4 | 6 |
+
+Round 5 is therefore retained as a negative DAgger result rather than promoted
+as the new baseline. Transport corrections improve one-step imitation on their
+own state distribution, but retraining the full shared encoder slightly harms
+the end-to-end state distribution. This illustrates why offline action error
+alone is not a policy-selection metric for long-horizon control.
+
+The round-4 checkpoint remains the recommended state-policy baseline. Further
+state-only DAgger rounds are deferred: the project now has a reproducible
+hierarchical controller with 80% success on a 30-seed held-out comparison, and
+the next milestone moves to RGB observations and language goals. Round 5 also
+provides a concrete future ablation for transport-head-only fine-tuning without
+changing the shared encoder.

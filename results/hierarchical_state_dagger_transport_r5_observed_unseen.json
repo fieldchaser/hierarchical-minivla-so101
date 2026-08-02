@@ -1,0 +1,271 @@
+{
+  "seed_start": 1300,
+  "num_successes": 7,
+  "num_episodes": 10,
+  "success_rate": 0.7,
+  "transition_votes": 3,
+  "phase_source": "observed",
+  "mean_final_phase": 4.4,
+  "final_phase_counts": {
+    "reach": 0,
+    "descend": 1,
+    "grasp": 0,
+    "lift": 0,
+    "transport": 2,
+    "release": 7
+  },
+  "reached_phase_counts": {
+    "reach": 10,
+    "descend": 10,
+    "grasp": 9,
+    "lift": 9,
+    "transport": 9,
+    "release": 7
+  },
+  "results": [
+    {
+      "seed": 1300,
+      "goal_cube": "red",
+      "success": true,
+      "steps": 122,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.193499,
+        0.55209,
+        0.022612
+      ],
+      "bin_xyz": [
+        -0.19837,
+        0.56247,
+        0.021
+      ]
+    },
+    {
+      "seed": 1301,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_phase": "transport",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport"
+      ],
+      "final_cube_xyz": [
+        -0.181317,
+        0.703325,
+        0.02524
+      ],
+      "bin_xyz": [
+        -0.194821,
+        0.695935,
+        0.021
+      ]
+    },
+    {
+      "seed": 1302,
+      "goal_cube": "blue",
+      "success": true,
+      "steps": 195,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.18664,
+        0.450411,
+        0.02263
+      ],
+      "bin_xyz": [
+        -0.198054,
+        0.442231,
+        0.021
+      ]
+    },
+    {
+      "seed": 1303,
+      "goal_cube": "red",
+      "success": true,
+      "steps": 110,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.196777,
+        0.528805,
+        0.022622
+      ],
+      "bin_xyz": [
+        -0.203019,
+        0.540312,
+        0.021
+      ]
+    },
+    {
+      "seed": 1304,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_phase": "transport",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport"
+      ],
+      "final_cube_xyz": [
+        -0.177648,
+        0.722287,
+        0.021323
+      ],
+      "bin_xyz": [
+        -0.193587,
+        0.715383,
+        0.021
+      ]
+    },
+    {
+      "seed": 1305,
+      "goal_cube": "blue",
+      "success": true,
+      "steps": 138,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.186869,
+        0.444328,
+        0.02233
+      ],
+      "bin_xyz": [
+        -0.199239,
+        0.456164,
+        0.021
+      ]
+    },
+    {
+      "seed": 1306,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_phase": "descend",
+      "phase_transitions": [
+        "reach",
+        "descend"
+      ],
+      "final_cube_xyz": [
+        -0.203173,
+        0.708138,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.211644,
+        0.545882,
+        0.021
+      ]
+    },
+    {
+      "seed": 1307,
+      "goal_cube": "green",
+      "success": true,
+      "steps": 109,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.188398,
+        0.371508,
+        0.024612
+      ],
+      "bin_xyz": [
+        -0.187579,
+        0.363116,
+        0.021
+      ]
+    },
+    {
+      "seed": 1308,
+      "goal_cube": "blue",
+      "success": true,
+      "steps": 111,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.198279,
+        0.462417,
+        0.022609
+      ],
+      "bin_xyz": [
+        -0.201039,
+        0.452817,
+        0.021
+      ]
+    },
+    {
+      "seed": 1309,
+      "goal_cube": "red",
+      "success": true,
+      "steps": 109,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.192347,
+        0.353397,
+        0.024246
+      ],
+      "bin_xyz": [
+        -0.193412,
+        0.345049,
+        0.021
+      ]
+    }
+  ]
+}
