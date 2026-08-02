@@ -69,7 +69,8 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Aggregate on-policy DAgger corrections (round 1)
 - [x] Run DAgger round 2 from the updated policy
 - [x] Target the descend-to-grasp boundary in DAgger round 3
-- [ ] Extend on-policy aggregation through grasp and lift
+- [x] Extend on-policy aggregation through grasp and lift
+- [ ] Aggregate on-policy transport and alignment failures
 - [ ] Add RGB observations and natural-language goals (Flat MiniVLA)
 - [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
 - [ ] Evaluate unseen layouts and instruction paraphrases
@@ -487,3 +488,77 @@ learn equivalent completion events from visual and proprioceptive inputs.
 The next milestone will keep these event gates and extend learner execution plus
 expert correction into grasp and lift. Repeating another reach/descend-only
 DAgger round is not justified by the round-3 evidence.
+
+## Milestone 9: grasp/lift DAgger, round 4
+
+Round 4 extends learner execution into the contact-sensitive grasp and lift
+phases. The approach phases retain an 80-step learner budget, while grasp and
+lift use a conservative 20-step budget before the scripted expert takes over.
+Observed completion events select the action head during collection, avoiding
+the narrow learned phase-boundary failure diagnosed in round 3.
+
+```bash
+python scripts/collect_dagger_dataset.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --checkpoint checkpoints/hierarchical_state_policy_dagger_descend_grasp_r3.pt \
+  --output-dir data/dagger/round_4_grasp_lift \
+  --episodes 30 \
+  --seed-start 900 \
+  --learner-grasp-lift-steps 20 \
+  --observed-phase-events
+```
+
+A six-episode smoke run first verified that the new configuration really visits
+the intended phases. Formal collection then succeeded in 28/30 attempts
+(93.33%) and saved 4,811 oracle-labeled states. Of the 2,596 learner-generated
+states, 560 are grasp states and 560 are lift states; previous rounds contained
+no learner execution in either phase.
+
+Training aggregates all five datasets:
+
+```bash
+python scripts/train_hierarchical_state_policy.py \
+  --data-dir data/scripted/recovery_mocap_120 \
+             data/dagger/round_1_boundary \
+             data/dagger/round_2_boundary \
+             data/dagger/round_3_descend_grasp \
+             data/dagger/round_4_grasp_lift \
+  --output checkpoints/hierarchical_state_policy_dagger_grasp_lift_r4.pt \
+  --metrics-output results/hierarchical_state_dagger_grasp_lift_r4_offline.json \
+  --epochs 300
+```
+
+The resulting split contains 44,959 steps from 228 successful episodes. The
+best checkpoint was selected at epoch 98.
+
+| Metric | Descend/grasp R3 | Grasp/lift R4 |
+|---|---:|---:|
+| Validation Cartesian MAE | 0.260 mm | 0.270 mm |
+| Validation gripper accuracy | 100% | 100% |
+| Validation phase accuracy | 93.31% | 94.47% |
+| Grasp phase accuracy | 96.67% | 97.01% |
+| Lift phase accuracy | 81.21% | 87.60% |
+| Success, same unseen seeds 1000-1009 | 8/10 | 10/10 |
+
+Before the final comparison, the observed event gates were aligned exactly with
+the data-collection protocol. Both now require a 4 mm approach tolerance, 30
+grasp-settling steps, and 12 mm object-to-bin transport tolerance. The earlier
+diagnostic used looser 12 mm, 10 mm, and 50 mm gates, which caused premature
+grasp and release transitions. Shared constants and boundary tests now prevent
+the collection and evaluation contracts from drifting apart again.
+
+With the aligned protocol, round 4 achieves 10/10 success on collected-layout
+seeds 0-9 and 10/10 on the held-out comparison seeds 1000-1009. A larger test on
+30 new seeds 1100-1129 succeeds in 22/30 episodes (73.33%). All 30 episodes
+complete grasp and lift and enter transport; the eight failures all remain in
+transport without satisfying the 12 mm release condition.
+
+This is the first learned-action checkpoint in the project to complete the full
+pick-and-place loop. The event gates use state observations to decide when a
+skill is complete, but every Cartesian and gripper command during evaluation is
+produced by the learned phase-specific action heads; the expert does not take
+over. It remains a hierarchical state-policy result rather than a VLA result.
+
+The next milestone will extend on-policy expert correction into transport and
+focus on object-centered bin alignment. The target is to reduce the eight
+transport failures before replacing state observations with RGB and language.

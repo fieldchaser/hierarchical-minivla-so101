@@ -7,7 +7,13 @@ from typing import Any
 
 import numpy as np
 
-from .hierarchical_policy import HierarchicalStateGoalPolicy, MonotonicPhaseTracker
+from .hierarchical_policy import (
+    GRASP_SETTLE_STEPS,
+    PHASE_POSITION_TOLERANCE,
+    TRANSPORT_XY_TOLERANCE,
+    HierarchicalStateGoalPolicy,
+    MonotonicPhaseTracker,
+)
 from .scripted_expert import (
     PHASE_NAMES,
     ScriptedEpisode,
@@ -68,13 +74,19 @@ class ScriptedRecoveryOracle:
         bin_xyz = env.get_goal_pos()
         next_phase = self.phase
 
-        if self.phase == 0 and np.linalg.norm(mocap - self.target(env)) < 0.004:
+        if (
+            self.phase == 0
+            and np.linalg.norm(mocap - self.target(env)) < PHASE_POSITION_TOLERANCE
+        ):
             next_phase = 1
-        elif self.phase == 1 and np.linalg.norm(mocap - self.target(env)) < 0.004:
+        elif (
+            self.phase == 1
+            and np.linalg.norm(mocap - self.target(env)) < PHASE_POSITION_TOLERANCE
+        ):
             next_phase = 2
         elif (
             self.phase == 2
-            and self.expert_steps_in_phase >= 30
+            and self.expert_steps_in_phase >= GRASP_SETTLE_STEPS
             and env.get_gripper_angle() < 0.6
         ):
             self.grasp_contact_angle = env.get_gripper_angle()
@@ -90,7 +102,8 @@ class ScriptedRecoveryOracle:
         elif (
             self.phase == 4
             and cube_xyz[2] > 0.08
-            and np.linalg.norm(cube_xyz[:2] - bin_xyz[:2]) < 0.012
+            and np.linalg.norm(cube_xyz[:2] - bin_xyz[:2])
+            < TRANSPORT_XY_TOLERANCE
         ):
             self.release_target = mocap.copy()
             self.release_target[2] = min(0.22, self.release_target[2] + 0.05)
@@ -111,6 +124,8 @@ def run_dagger_episode(
     env: Any,
     policy: HierarchicalStateGoalPolicy,
     learner_steps_per_phase: int = 80,
+    learner_grasp_lift_steps: int = 0,
+    use_observed_phase_events: bool = False,
     learner_stagnation_steps: int = 5,
     learner_action_threshold: float = 0.0002,
     max_steps: int = 800,
@@ -119,6 +134,8 @@ def run_dagger_episode(
     """Collect expert labels on states produced by alternating learner/expert control."""
     if learner_steps_per_phase < 0:
         raise ValueError("learner_steps_per_phase must be non-negative")
+    if learner_grasp_lift_steps < 0:
+        raise ValueError("learner_grasp_lift_steps must be non-negative")
 
     records: dict[str, list[np.ndarray | int | float | bool]] = {
         "state_ee_xyz": [],
@@ -153,10 +170,16 @@ def run_dagger_episode(
         mocap = env.data.mocap_pos[env.mocap_id].copy()
         feature = observation_to_feature(obs, mocap)
         predicted_phase = policy.predict_phase(feature)
-        learner_phase = learner_tracker.update(predicted_phase)
+        tracked_phase = learner_tracker.update(predicted_phase)
+        learner_phase = oracle.phase if use_observed_phase_events else tracked_phase
         expert_delta, expert_gripper, expert_phase = oracle.label(env)
 
-        learner_budget = learner_steps_per_phase if oracle.phase in (0, 1) else 0
+        if oracle.phase in (0, 1):
+            learner_budget = learner_steps_per_phase
+        elif oracle.phase in (2, 3):
+            learner_budget = learner_grasp_lift_steps
+        else:
+            learner_budget = 0
         learner_executed = (
             learner_steps_used < learner_budget
             and learner_stagnation_count < learner_stagnation_steps
@@ -166,7 +189,10 @@ def run_dagger_episode(
                 feature, phase=learner_phase
             )
             learner_steps_used += 1
-            if np.linalg.norm(executed_delta) < learner_action_threshold:
+            if (
+                oracle.phase != 2
+                and np.linalg.norm(executed_delta) < learner_action_threshold
+            ):
                 learner_stagnation_count += 1
             else:
                 learner_stagnation_count = 0

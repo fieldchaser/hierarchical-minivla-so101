@@ -64,6 +64,12 @@ class HierarchicalPolicyTest(unittest.TestCase):
         grasp_target = np.array([-0.215, 0.446, 0.078])
         self.assertEqual(observed_event_next_phase(observation, above_cube, 0, 4), 1)
         self.assertEqual(
+            observed_event_next_phase(
+                observation, above_cube + np.array([0.005, 0.0, 0.0]), 0, 4
+            ),
+            0,
+        )
+        self.assertEqual(
             observed_event_next_phase(observation, grasp_target, 1, 4), 2
         )
 
@@ -77,7 +83,8 @@ class HierarchicalPolicyTest(unittest.TestCase):
             "gripper": np.array([0.5]),
         }
         mocap = np.array([-0.215, 0.346, 0.17])
-        self.assertEqual(observed_event_next_phase(observation, mocap, 2, 20), 3)
+        self.assertEqual(observed_event_next_phase(observation, mocap, 2, 29), 2)
+        self.assertEqual(observed_event_next_phase(observation, mocap, 2, 30), 3)
         self.assertEqual(observed_event_next_phase(observation, mocap, 3, 1), 4)
         self.assertEqual(observed_event_next_phase(observation, mocap, 4, 1), 5)
 

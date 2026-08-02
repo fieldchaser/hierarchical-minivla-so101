@@ -12,7 +12,7 @@ import mujoco
 
 from hierarchical_minivla.dagger import run_dagger_episode
 from hierarchical_minivla.hierarchical_policy import load_hierarchical_policy
-from hierarchical_minivla.scripted_expert import save_scripted_episode
+from hierarchical_minivla.scripted_expert import PHASE_NAMES, save_scripted_episode
 
 
 class PhysicsOnlyRenderer:
@@ -31,6 +31,8 @@ def main() -> None:
     parser.add_argument("--seed-start", type=int, default=300)
     parser.add_argument("--cube-pos-std", type=float, default=0.006)
     parser.add_argument("--learner-steps-per-phase", type=int, default=80)
+    parser.add_argument("--learner-grasp-lift-steps", type=int, default=0)
+    parser.add_argument("--observed-phase-events", action="store_true")
     parser.add_argument("--learner-stagnation-steps", type=int, default=5)
     parser.add_argument("--learner-action-threshold", type=float, default=0.0002)
     parser.add_argument("--max-steps", type=int, default=800)
@@ -57,6 +59,7 @@ def main() -> None:
     num_successes = 0
     saved_steps = 0
     learner_state_steps = 0
+    learner_phase_counts = {name: 0 for name in PHASE_NAMES}
     for episode_index in range(args.episodes):
         seed = args.seed_start + episode_index
         goal_cube = colors[episode_index % len(colors)]
@@ -71,6 +74,8 @@ def main() -> None:
             env,
             policy,
             learner_steps_per_phase=args.learner_steps_per_phase,
+            learner_grasp_lift_steps=args.learner_grasp_lift_steps,
+            use_observed_phase_events=args.observed_phase_events,
             learner_stagnation_steps=args.learner_stagnation_steps,
             learner_action_threshold=args.learner_action_threshold,
             max_steps=args.max_steps,
@@ -84,6 +89,8 @@ def main() -> None:
             num_successes += 1
             saved_steps += episode.num_steps
             learner_state_steps += dagger_steps
+            for phase in episode.arrays["phase"][episode.arrays["dagger"]]:
+                learner_phase_counts[PHASE_NAMES[int(phase)]] += 1
         record = {
             "episode_index": episode_index,
             "seed": seed,
@@ -110,6 +117,8 @@ def main() -> None:
             "seed_start": args.seed_start,
             "cube_pos_std": args.cube_pos_std,
             "learner_steps_per_phase": args.learner_steps_per_phase,
+            "learner_grasp_lift_steps": args.learner_grasp_lift_steps,
+            "observed_phase_events": args.observed_phase_events,
             "learner_stagnation_steps": args.learner_stagnation_steps,
             "learner_action_threshold": args.learner_action_threshold,
             "max_steps": args.max_steps,
@@ -119,6 +128,7 @@ def main() -> None:
         "success_rate": success_rate,
         "num_saved_steps": saved_steps,
         "num_learner_state_steps": learner_state_steps,
+        "learner_phase_counts": learner_phase_counts,
         "attempts": attempts,
     }
     manifest_path = output_dir / "manifest.json"

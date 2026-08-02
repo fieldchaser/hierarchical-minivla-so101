@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from hierarchical_minivla.dagger import ScriptedRecoveryOracle
+from hierarchical_minivla.dagger import ScriptedRecoveryOracle, run_dagger_episode
 from hierarchical_minivla.state_policy import GRIPPER_OPEN
 
 
@@ -30,6 +30,10 @@ class DaggerTest(unittest.TestCase):
         self.assertLessEqual(float(np.abs(delta).max()), 0.004)
         self.assertEqual(gripper, GRIPPER_OPEN)
         self.assertEqual(phase, 0)
+
+    def test_negative_grasp_lift_budget_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "learner_grasp_lift_steps"):
+            run_dagger_episode(None, None, learner_grasp_lift_steps=-1)
 
 
 if __name__ == "__main__":

@@ -19,6 +19,9 @@ from .state_policy import (
 )
 
 NUM_PHASES = len(PHASE_NAMES)
+PHASE_POSITION_TOLERANCE = 0.004
+GRASP_SETTLE_STEPS = 30
+TRANSPORT_XY_TOLERANCE = 0.012
 
 
 def phase_progress_summary(final_phases: Sequence[int]) -> dict[str, object]:
@@ -59,18 +62,29 @@ def observed_event_next_phase(
     above_cube = grasp_target.copy()
     above_cube[2] = 0.15
 
-    if current_phase == 0 and np.linalg.norm(mocap_xyz - above_cube) < 0.012:
+    if (
+        current_phase == 0
+        and np.linalg.norm(mocap_xyz - above_cube) < PHASE_POSITION_TOLERANCE
+    ):
         return 1
-    if current_phase == 1 and np.linalg.norm(mocap_xyz - grasp_target) < 0.010:
+    if (
+        current_phase == 1
+        and np.linalg.norm(mocap_xyz - grasp_target) < PHASE_POSITION_TOLERANCE
+    ):
         return 2
-    if current_phase == 2 and phase_steps >= 20 and gripper_angle < 0.6:
+    if (
+        current_phase == 2
+        and phase_steps >= GRASP_SETTLE_STEPS
+        and gripper_angle < 0.6
+    ):
         return 3
     if current_phase == 3 and cube_xyz[2] > 0.08:
         return 4
     if (
         current_phase == 4
         and cube_xyz[2] > 0.08
-        and np.linalg.norm(cube_xyz[:2] - bin_xyz[:2]) < 0.05
+        and np.linalg.norm(cube_xyz[:2] - bin_xyz[:2])
+        < TRANSPORT_XY_TOLERANCE
     ):
         return 5
     return current_phase

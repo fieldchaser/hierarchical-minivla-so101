@@ -1,0 +1,32 @@
+{
+  "device": "cpu",
+  "train_episodes": 182,
+  "validation_episodes": 46,
+  "train_steps": 36086,
+  "validation_steps": 8873,
+  "best_epoch": 98,
+  "loss": 0.2983766794204712,
+  "delta_loss": 0.12362939864397049,
+  "gripper_loss": 2.3539113769288633e-08,
+  "phase_loss": 0.17474724352359772,
+  "delta_mae_mm": 0.2699000178836286,
+  "gripper_accuracy": 1.0,
+  "phase_accuracy": 0.9446635842323303,
+  "per_phase_accuracy": [
+    0.9343173503875732,
+    0.932584285736084,
+    0.9701298475265503,
+    0.8759999871253967,
+    0.9695960283279419,
+    0.9592969417572021
+  ],
+  "phase_names": [
+    "reach",
+    "descend",
+    "grasp",
+    "lift",
+    "transport",
+    "release"
+  ],
+  "checkpoint": "checkpoints/hierarchical_state_policy_dagger_grasp_lift_r4.pt"
+}
