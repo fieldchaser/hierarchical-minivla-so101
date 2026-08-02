@@ -66,7 +66,8 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Train a neural state + one-hot goal baseline on real simulation data
 - [x] Compare flat and hierarchical state policies
 - [x] Expand to recovery-augmented 120-episode data
-- [ ] Aggregate on-policy DAgger corrections
+- [x] Aggregate on-policy DAgger corrections (round 1)
+- [ ] Run DAgger round 2 from the updated policy
 - [ ] Add RGB observations and natural-language goals (Flat MiniVLA)
 - [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
 - [ ] Evaluate unseen layouts and instruction paraphrases
@@ -310,3 +311,55 @@ states receive labels. The next milestone must roll out the current policy,
 capture its actual boundary failures, and query the scripted expert for recovery
 actions at those states. That on-policy aggregation step is now required before
 adding image observations.
+
+## Milestone 6: on-policy boundary DAgger, round 1
+
+The DAgger collector alternates learned control with a scripted recovery oracle.
+At every visited state it stores the oracle action and phase as the training
+label, together with the action that was actually executed. The first round
+targets the dominant reach/descend failure: the learner runs until its Cartesian
+action remains below `0.2 mm` for five steps (or reaches 80 steps), then the
+expert takes over. Contact, lift, transport, and release remain expert-controlled
+in this safety-focused round.
+
+```bash
+python scripts/collect_dagger_dataset.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --checkpoint checkpoints/hierarchical_state_policy_mocap_recovery.pt \
+  --output-dir data/dagger/round_1_boundary \
+  --episodes 30 \
+  --seed-start 300
+```
+
+The recovery oracle also gained two physically motivated corrections discovered
+during smoke testing: transport continuously recomputes the wrist-to-cube offset
+so the cube itself is centered over the bin, and release opens the gripper while
+retreating upward. With these corrections, 25/30 hybrid episodes succeeded
+(83.33%). The saved set contains 3,985 labeled states, including 1,097 states
+actually produced by the learner running to a phase boundary.
+
+The training command now accepts multiple data directories, allowing aggregation
+without copying or rewriting prior episodes:
+
+```bash
+python scripts/train_hierarchical_state_policy.py \
+  --data-dir data/scripted/recovery_mocap_120 data/dagger/round_1_boundary \
+  --output checkpoints/hierarchical_state_policy_dagger_boundary_r1.pt \
+  --metrics-output results/hierarchical_state_dagger_boundary_r1_offline.json
+```
+
+| Metric | Before DAgger | Boundary DAgger R1 |
+|---|---:|---:|
+| Validation Cartesian MAE | 0.277 mm | 0.263 mm |
+| Validation gripper accuracy | 100% | 100% |
+| Validation phase accuracy | 94.51% | 91.95% |
+| Collected-layout success | 0/10 | 0/10 |
+| Unseen seeds 400-409 | — | 0/10 |
+
+The lower phase accuracy is expected because the aggregated data contains more
+ambiguous boundary states. Round 1 does not yet improve final task success,
+although several rollouts now advance into descend. This is retained as a
+negative result: DAgger is iterative, and a single round labels failures from
+the pre-DAgger policy only. Round 2 must roll out the updated checkpoint so that
+the next set reflects its new failure distribution rather than repeatedly
+sampling the original one.

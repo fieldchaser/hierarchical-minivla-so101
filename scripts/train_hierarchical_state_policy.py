@@ -67,7 +67,7 @@ def evaluate(
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", type=Path, required=True)
+    parser.add_argument("--data-dir", type=Path, nargs="+", required=True)
     parser.add_argument(
         "--output", type=Path, default=Path("checkpoints/hierarchical_state_policy.pt")
     )
@@ -83,7 +83,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    paths = sorted(args.data_dir.expanduser().resolve().glob("episode_*.npz"))
+    paths = sorted(
+        path
+        for data_dir in args.data_dir
+        for path in data_dir.expanduser().resolve().glob("episode_*.npz")
+    )
     train_paths, validation_paths = split_episode_paths(paths, seed=args.seed)
     train_arrays = load_hierarchical_episodes(train_paths)
     validation_arrays = load_hierarchical_episodes(validation_paths)
