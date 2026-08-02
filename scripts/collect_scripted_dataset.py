@@ -14,6 +14,7 @@ import numpy as np
 from hierarchical_minivla.scripted_expert import (
     INSTRUCTION_TEMPLATES,
     instruction_for_goal,
+    instruction_variant_for_episode,
     run_scripted_episode,
     save_scripted_episode,
 )
@@ -108,9 +109,10 @@ def main() -> None:
             render_h=args.render_height,
         )
         recovery_rng = np.random.default_rng(seed + 1_000_000)
-        instruction = instruction_for_goal(
-            goal_cube, variant=seed % len(INSTRUCTION_TEMPLATES)
+        instruction_variant = instruction_variant_for_episode(
+            episode_index, len(args.colors)
         )
+        instruction = instruction_for_goal(goal_cube, variant=instruction_variant)
         frame_observer = None
         if args.record_rgb:
             frame_observer = lambda: env.render_rgb(args.camera)
@@ -141,6 +143,7 @@ def main() -> None:
             "episode_index": episode_index,
             "seed": seed,
             "goal_cube": goal_cube,
+            "instruction_variant": instruction_variant if args.record_rgb else None,
             "instruction": instruction if args.record_rgb else None,
             "vision": vision_summary,
             "success": episode.success,

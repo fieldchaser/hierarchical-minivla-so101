@@ -31,6 +31,17 @@ def instruction_for_goal(goal_cube: str, variant: int = 0) -> str:
     return template.format(color=goal_cube)
 
 
+def instruction_variant_for_episode(
+    episode_index: int, color_cycle_size: int
+) -> int:
+    """Rotate language only after every requested color has been sampled."""
+    if episode_index < 0:
+        raise ValueError("episode_index must be non-negative")
+    if color_cycle_size < 1:
+        raise ValueError("color_cycle_size must be positive")
+    return (episode_index // color_cycle_size) % len(INSTRUCTION_TEMPLATES)
+
+
 @dataclass(frozen=True)
 class ScriptedEpisode:
     success: bool
