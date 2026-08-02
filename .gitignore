@@ -3,4 +3,5 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 *.npz
+/data/
 .DS_Store

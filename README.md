@@ -62,7 +62,7 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 
 - [x] Goal-conditioned data contract and runnable BC smoke baseline
 - [x] Upstream multicube environment smoke-test entry point
-- [ ] Record or generate MuJoCo multicube demonstrations
+- [x] Record or generate MuJoCo multicube demonstrations
 - [ ] Train a neural state + one-hot goal baseline on real simulation data
 - [ ] Add RGB observations and natural-language goals (Flat MiniVLA)
 - [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
@@ -120,3 +120,31 @@ center was `[-0.1959, 0.6890, 0.0233]` for a bin centered at
 `[-0.2000, 0.7000, 0.0210]`. All ten temporal arrays in each saved trajectory
 have the same length, and the complete project test suite contains eight passing
 tests.
+
+## Milestone 2: randomized multi-goal dataset
+
+The same physical expert now runs on shuffled layouts with Gaussian position
+noise and cycles through red, green, and blue goal conditions. A batch
+collector saves only successful trajectories for behavior cloning and writes a
+`manifest.json` containing every attempted seed, including final cube and bin
+positions for failures.
+
+Collect the default 20-episode validation set with:
+
+```bash
+python scripts/collect_scripted_dataset.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --output-dir data/scripted/randomized \
+  --episodes 20
+```
+
+The command exits unsuccessfully when fewer than 90% of attempts work, so it can
+also serve as a reproducible regression check. Failed attempts are documented in
+the manifest but are not added to the training trajectories.
+
+On 2 August 2026, seeds 0 through 19 achieved 19/20 successful physical
+pick-and-place episodes (95%) and produced 4,203 aligned state-action pairs
+while cycling through all three goal colors. Seed
+18 was the only failure: the red cube remained near the gripper at a height of
+approximately 8.2 cm after the release phase. This gives us a real randomized
+MuJoCo dataset for the next milestone: a learned neural state-and-goal policy.

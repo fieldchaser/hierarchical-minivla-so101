@@ -1,4 +1,4 @@
-"""A fixed-layout MuJoCo expert that produces one real pick-and-place trajectory."""
+"""A MuJoCo expert that produces physically executed pick-and-place trajectories."""
 
 from __future__ import annotations
 
@@ -51,10 +51,10 @@ def is_released_in_bin(
 
 
 def run_scripted_episode(env: Any) -> ScriptedEpisode:
-    """Run a deterministic red-cube pick-and-place episode.
+    """Run one pick-and-place episode for the environment's selected cube.
 
-    The environment must be the fixed-layout upstream multicube scene with the
-    red cube selected as its goal. States are captured before each command so
+    The environment must be the upstream multicube scene. Cube color and layout
+    may vary between environments. States are captured before each command so
     every row is a behavior-cloning pair ``(observation_t, action_t)``.
     """
     records: dict[str, list[np.ndarray | int | float]] = {
