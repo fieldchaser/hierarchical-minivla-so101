@@ -64,6 +64,7 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Upstream multicube environment smoke-test entry point
 - [x] Record or generate MuJoCo multicube demonstrations
 - [x] Train a neural state + one-hot goal baseline on real simulation data
+- [x] Compare flat and hierarchical state policies
 - [ ] Add RGB observations and natural-language goals (Flat MiniVLA)
 - [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
 - [ ] Evaluate unseen layouts and instruction paraphrases
@@ -200,3 +201,57 @@ cannot. The existing demonstrations already contain reach, descend, grasp,
 lift, transport, and release labels, so the next comparison can hold the data
 and network size fixed while changing only the policy structure. Exact metrics
 and per-seed outcomes are stored under `results/`.
+
+## Milestone 4: hierarchical state-policy diagnostic
+
+The hierarchical policy keeps the same 34-dimensional state-and-goal input and
+two-layer 128-unit encoder. It adds a weighted six-class phase head and six
+phase-specific action heads:
+
+```text
+state + one-hot goal -> shared encoder -> phase prediction
+                                    \-> phase-specific action
+```
+
+At deployment, a monotonic tracker requires repeated evidence for exactly the
+next phase, so the learned controller cannot move backward or skip manipulation
+stages. Training and evaluation commands are:
+
+```bash
+python scripts/train_hierarchical_state_policy.py \
+  --data-dir data/scripted/randomized \
+  --output checkpoints/hierarchical_state_policy.pt \
+  --metrics-output results/hierarchical_state_offline.json
+
+python scripts/evaluate_hierarchical_state_policy.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --checkpoint checkpoints/hierarchical_state_policy.pt \
+  --episodes 10 \
+  --seed-start 100 \
+  --output results/hierarchical_state_unseen.json
+```
+
+Using the identical 15/4 episode split, hierarchy improved every offline action
+metric but did not yet produce a successful closed-loop episode:
+
+| Metric | Flat | Hierarchical |
+|---|---:|---:|
+| Validation Cartesian MAE | 0.766 mm | 0.457 mm |
+| Validation gripper accuracy | 98.95% | 100% |
+| Validation phase accuracy | — | 81.68% |
+| Collected-layout closed loop | 0/10 | 0/10 |
+| Unseen-layout closed loop | 0/10 | 0/10 |
+
+The weakest phase classes were lift (61.29%) and transport (74.90%). An
+additional diagnostic supplied phase transitions from privileged simulator
+geometry while retaining the learned action heads. This oracle-phase condition
+also scored 0/10 on both layout sets. It is not a deployable policy; it isolates
+the failure source by showing that phase classification alone is not the main
+bottleneck.
+
+The result supports a narrower next step: collect broader state coverage and
+DAgger-style recovery corrections before adding images. Both flat and
+hierarchical one-step behavior cloning currently fit expert trajectories but do
+not recover after their own small errors move them away from those trajectories.
+The complete learned-phase and oracle-phase outcomes are stored under
+`results/`.
