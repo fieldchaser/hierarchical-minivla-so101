@@ -75,3 +75,48 @@ This project is inspired by and interoperates with [ETH Zurich's Robot Learning 
 The course repository did not declare a repository-level license when inspected on 2 August 2026. Therefore, this repository does not copy or redistribute the course homework code, autograder, or scene assets. The smoke script loads a separately obtained local checkout. The robot mesh subdirectory in the upstream repository includes its own license; users must still review upstream terms before redistribution.
 
 All code authored in this repository is released under the MIT License.
+
+## Milestone 1: physically executed scripted expert
+
+The first real MuJoCo demonstration now uses a deterministic finite-state
+controller instead of synthetic labels:
+
+```text
+reach -> descend -> grasp -> lift -> transport -> release
+```
+
+The expert controls the existing mocap end-effector target and the physical jaw
+actuator in ETH's fixed multicube scene. The cube is never attached or moved by
+editing its state. During a successful grasp, the jaw stops near `0.32 rad`
+instead of reaching its closed limit, showing that the cube is held by contact.
+Success additionally requires the jaw to be open after the cube settles in the
+bin.
+
+Run the collector with a separately obtained ETH HW3 checkout:
+
+```bash
+python scripts/collect_scripted_demo.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --output data/scripted/red_fixed_seed0.npz
+```
+
+The compressed trajectory contains aligned observations and commands:
+
+```text
+state_ee_xyz, state_joints, state_gripper
+cubes_xyz, cubes, state_goal, goal_pos
+action_ee_xyz, action_gripper
+phase, phase_names
+```
+
+In the verified fixed-layout episode, the red cube was physically grasped,
+lifted, transported, released, and remained inside the bin after settling. This
+milestone proves the classical-control-to-demonstration part of the pipeline;
+randomized layouts and learned policies remain future work.
+
+Verification was repeated three times from a fresh reset. Every run succeeded
+in 273 control steps with a grasp contact angle of `0.3255 rad`; the final cube
+center was `[-0.1959, 0.6890, 0.0233]` for a bin centered at
+`[-0.2000, 0.7000, 0.0210]`. All ten temporal arrays in each saved trajectory
+have the same length, and the complete project test suite contains eight passing
+tests.
