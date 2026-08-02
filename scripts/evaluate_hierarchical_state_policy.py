@@ -14,6 +14,7 @@ import numpy as np
 from hierarchical_minivla.hierarchical_policy import (
     MonotonicPhaseTracker,
     load_hierarchical_policy,
+    observed_event_next_phase,
     phase_progress_summary,
 )
 from hierarchical_minivla.scripted_expert import PHASE_NAMES, is_released_in_bin
@@ -28,32 +29,6 @@ class PhysicsOnlyRenderer:
         pass
 
 
-def oracle_next_phase(env, current_phase: int, phase_steps: int) -> int:
-    """Use privileged simulator geometry to diagnose the learned action heads."""
-    cube_xyz = env.get_target_cube_state()[:3]
-    bin_xyz = env.get_goal_pos()
-    grasp_target = np.array([cube_xyz[0] - 0.015, cube_xyz[1] - 0.004, 0.078])
-    above_cube = grasp_target.copy()
-    above_cube[2] = 0.15
-    mocap = env.data.mocap_pos[env.mocap_id]
-
-    if current_phase == 0 and np.linalg.norm(mocap - above_cube) < 0.012:
-        return 1
-    if current_phase == 1 and np.linalg.norm(mocap - grasp_target) < 0.010:
-        return 2
-    if current_phase == 2 and phase_steps >= 20 and env.get_gripper_angle() < 0.6:
-        return 3
-    if current_phase == 3 and cube_xyz[2] > 0.08:
-        return 4
-    if (
-        current_phase == 4
-        and cube_xyz[2] > 0.08
-        and np.linalg.norm(cube_xyz[:2] - bin_xyz[:2]) < 0.05
-    ):
-        return 5
-    return current_phase
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--eth-hw3", type=Path, required=True)
@@ -64,7 +39,9 @@ def main() -> None:
     parser.add_argument("--max-steps", type=int, default=400)
     parser.add_argument("--transition-votes", type=int, default=3)
     parser.add_argument(
-        "--phase-source", choices=("learned", "oracle"), default="learned"
+        "--phase-source",
+        choices=("learned", "observed", "oracle"),
+        default="learned",
     )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
@@ -104,8 +81,8 @@ def main() -> None:
             if args.phase_source == "learned":
                 active_phase = tracker.update(policy.predict_phase(feature))
             else:
-                tracker.current_phase = oracle_next_phase(
-                    env, tracker.current_phase, phase_steps
+                tracker.current_phase = observed_event_next_phase(
+                    env.get_obs(), mocap, tracker.current_phase, phase_steps
                 )
                 active_phase = tracker.current_phase
             if active_phase != previous_phase:

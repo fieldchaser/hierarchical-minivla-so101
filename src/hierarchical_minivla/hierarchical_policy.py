@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
+from typing import Mapping, Sequence
 
 import numpy as np
 import torch
@@ -39,6 +39,41 @@ def phase_progress_summary(final_phases: Sequence[int]) -> dict[str, object]:
             for index, name in enumerate(PHASE_NAMES)
         },
     }
+
+
+def observed_event_next_phase(
+    observation: Mapping[str, np.ndarray],
+    mocap_xyz: np.ndarray,
+    current_phase: int,
+    phase_steps: int,
+) -> int:
+    """Advance from task-completion events available in the state observation."""
+    cubes = np.asarray(observation["cubes_xyz"]).reshape(3, 3)
+    goal = np.asarray(observation["goal"])
+    cube_xyz = goal @ cubes
+    bin_xyz = np.asarray(observation["goal_pos"])
+    gripper_angle = float(np.asarray(observation["gripper"]).reshape(-1)[0])
+    grasp_target = np.array(
+        [cube_xyz[0] - 0.015, cube_xyz[1] - 0.004, 0.078]
+    )
+    above_cube = grasp_target.copy()
+    above_cube[2] = 0.15
+
+    if current_phase == 0 and np.linalg.norm(mocap_xyz - above_cube) < 0.012:
+        return 1
+    if current_phase == 1 and np.linalg.norm(mocap_xyz - grasp_target) < 0.010:
+        return 2
+    if current_phase == 2 and phase_steps >= 20 and gripper_angle < 0.6:
+        return 3
+    if current_phase == 3 and cube_xyz[2] > 0.08:
+        return 4
+    if (
+        current_phase == 4
+        and cube_xyz[2] > 0.08
+        and np.linalg.norm(cube_xyz[:2] - bin_xyz[:2]) < 0.05
+    ):
+        return 5
+    return current_phase
 
 
 def load_hierarchical_episodes(

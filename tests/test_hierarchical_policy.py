@@ -11,6 +11,7 @@ from hierarchical_minivla.hierarchical_policy import (
     MonotonicPhaseTracker,
     balanced_phase_weights,
     load_hierarchical_policy,
+    observed_event_next_phase,
     phase_progress_summary,
     save_hierarchical_policy,
 )
@@ -49,6 +50,36 @@ class HierarchicalPolicyTest(unittest.TestCase):
         self.assertEqual(summary["final_phase_counts"]["descend"], 2)
         self.assertEqual(summary["reached_phase_counts"]["descend"], 3)
         self.assertEqual(summary["reached_phase_counts"]["grasp"], 1)
+
+    def test_observed_events_advance_reach_and_descend(self) -> None:
+        observation = {
+            "cubes_xyz": np.array(
+                [-0.2, 0.35, 0.02, -0.2, 0.45, 0.02, -0.2, 0.55, 0.02]
+            ),
+            "goal": np.array([0.0, 1.0, 0.0]),
+            "goal_pos": np.array([-0.2, 0.7, 0.021]),
+            "gripper": np.array([1.0]),
+        }
+        above_cube = np.array([-0.215, 0.446, 0.15])
+        grasp_target = np.array([-0.215, 0.446, 0.078])
+        self.assertEqual(observed_event_next_phase(observation, above_cube, 0, 4), 1)
+        self.assertEqual(
+            observed_event_next_phase(observation, grasp_target, 1, 4), 2
+        )
+
+    def test_observed_events_advance_contact_lift_and_transport(self) -> None:
+        observation = {
+            "cubes_xyz": np.array(
+                [-0.2, 0.35, 0.09, -0.2, 0.45, 0.02, -0.2, 0.55, 0.02]
+            ),
+            "goal": np.array([1.0, 0.0, 0.0]),
+            "goal_pos": np.array([-0.2, 0.35, 0.021]),
+            "gripper": np.array([0.5]),
+        }
+        mocap = np.array([-0.215, 0.346, 0.17])
+        self.assertEqual(observed_event_next_phase(observation, mocap, 2, 20), 3)
+        self.assertEqual(observed_event_next_phase(observation, mocap, 3, 1), 4)
+        self.assertEqual(observed_event_next_phase(observation, mocap, 4, 1), 5)
 
     def test_checkpoint_round_trip_preserves_phase_and_action(self) -> None:
         policy = make_policy()

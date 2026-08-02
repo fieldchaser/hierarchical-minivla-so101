@@ -68,7 +68,8 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Expand to recovery-augmented 120-episode data
 - [x] Aggregate on-policy DAgger corrections (round 1)
 - [x] Run DAgger round 2 from the updated policy
-- [ ] Target the descend-to-grasp boundary in DAgger round 3
+- [x] Target the descend-to-grasp boundary in DAgger round 3
+- [ ] Extend on-policy aggregation through grasp and lift
 - [ ] Add RGB observations and natural-language goals (Flat MiniVLA)
 - [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
 - [ ] Evaluate unseen layouts and instruction paraphrases
@@ -416,3 +417,73 @@ to descend-to-grasp. The next DAgger round should use the round-2 checkpoint and
 collect new on-policy corrections around that boundary before any claim that
 the state controller is solved. RGB and language remain intentionally deferred
 until the closed-loop control pipeline has a stronger base.
+
+## Milestone 8: descend-to-grasp DAgger, round 3
+
+Round 3 rolls out the round-2 checkpoint on seeds 700-729 and aggregates the
+new state distribution with every previous successful episode:
+
+```bash
+python scripts/collect_dagger_dataset.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --checkpoint checkpoints/hierarchical_state_policy_dagger_boundary_r2.pt \
+  --output-dir data/dagger/round_3_descend_grasp \
+  --episodes 30 \
+  --seed-start 700
+
+python scripts/train_hierarchical_state_policy.py \
+  --data-dir data/scripted/recovery_mocap_120 \
+             data/dagger/round_1_boundary \
+             data/dagger/round_2_boundary \
+             data/dagger/round_3_descend_grasp \
+  --output checkpoints/hierarchical_state_policy_dagger_descend_grasp_r3.pt \
+  --metrics-output results/hierarchical_state_dagger_descend_grasp_r3_offline.json \
+  --epochs 300
+```
+
+The hybrid collector succeeded in 27/30 attempts (90%) and saved 4,023
+oracle-labeled states, 1,304 of which were reached under learner control. The
+four aggregated datasets contain 40,148 steps from 200 successful episodes.
+
+| Metric | Boundary DAgger R2 | Descend/grasp DAgger R3 |
+|---|---:|---:|
+| Validation Cartesian MAE | 0.270 mm | 0.260 mm |
+| Validation gripper accuracy | 100% | 100% |
+| Validation phase accuracy | 93.02% | 93.31% |
+| Reached descend, same unseen seeds 800-809 | 7/10 | 5/10 |
+| Reached grasp with learned transitions | 0/10 | 0/10 |
+| Full learned-policy success | 0/10 | 0/10 |
+
+This is a useful negative result: a third aggregation round improves offline
+imitation metrics but does not fix the closed-loop boundary. Terminal-state
+diagnostics show that all ten rollouts stop within 4 mm of their active reach or
+descend target, with nearly zero predicted motion, while the phase head keeps
+predicting the current phase. The training label switches only after the expert
+crosses this narrow boundary, so collecting more current-phase corrections
+cannot reliably teach a completion event.
+
+The evaluator therefore adds an explicit `observed` event diagnostic. It uses
+only the mocap, target-cube, bin, and gripper values already present in the
+state-policy observation; it does not move objects or provide expert actions:
+
+```bash
+python scripts/evaluate_hierarchical_state_policy.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --checkpoint checkpoints/hierarchical_state_policy_dagger_descend_grasp_r3.pt \
+  --episodes 10 \
+  --seed-start 800 \
+  --phase-source observed \
+  --output results/hierarchical_state_dagger_descend_grasp_r3_observed_800.json
+```
+
+With observed completion events, all 10/10 rollouts reach grasp and lift, and
+2/10 reach transport and release. Full success remains 0/10 because most cubes
+are lost during lift and the two release trajectories do not settle in the bin.
+This separates the two remaining problems: narrow learned phase boundaries and
+insufficient on-policy grasp/lift recovery data. The observed mode is a
+state-policy diagnostic, not a claim of RGB-only autonomy; a later VLA must
+learn equivalent completion events from visual and proprioceptive inputs.
+
+The next milestone will keep these event gates and extend learner execution plus
+expert correction into grasp and lift. Repeating another reach/descend-only
+DAgger round is not justified by the round-3 evidence.
