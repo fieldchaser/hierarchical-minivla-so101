@@ -2,17 +2,18 @@
 
 A simulation-first research project for language-conditioned, multi-task robotic manipulation. The long-term question is whether explicit skill phases improve data efficiency and generalization over a flat vision-language-action policy.
 
-## Current milestone: Hierarchical MiniVLA closed-loop diagnosis
+## Current milestone: recovery augmentation and its closed-loop limit
 
-The Hierarchical MiniVLA improves held-out offline Cartesian MAE from the Flat
-baseline's `0.580 mm` to `0.490 mm`, but the first seen-layout closed-loop run
-does not complete reach. On training seed 1609, the reach head passes within
-8.2 mm of its target and then accumulates a persistent positive-Y error until
-the observation leaves the demonstration distribution. An offline replay of
-the recorded seed-1609 trajectory still gives 96.9% phase accuracy, proving
-that checkpoint loading and in-distribution phase learning work. Milestone 17
-retains this negative result and motivates RGB recovery demonstrations rather
-than tuning the phase-vote threshold around the underlying action drift.
+Thirty RGB recovery trajectories add 7,212 frames, including 251 corrective
+frames around reach, lift, and transport. With the original nine validation
+episodes fixed, recovery augmentation improves Hierarchical MiniVLA phase
+accuracy from 90.70% to 96.26% and autonomous action MAE from `0.490 mm` to
+`0.347 mm`. The seen seed-1609 rollout also eliminates spurious release
+predictions and advances through reach, descend, and grasp. However, it still
+closes 188 mm from the cube because the reach action drifts beyond the local
+recovery distribution. Milestone 18 records both the offline gain and the
+remaining 0/1 physical success, motivating visual DAgger on actual policy-
+visited states rather than more random local perturbations.
 
 Milestone 0 began with the smallest useful symbolic contract:
 
@@ -81,7 +82,8 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Overfit one real phase-balanced Hierarchical MiniVLA batch
 - [x] Train and evaluate Hierarchical MiniVLA on complete held-out episodes
 - [x] Diagnose Hierarchical MiniVLA on a seen closed-loop layout
-- [ ] Add RGB recovery demonstrations for off-trajectory correction
+- [x] Add RGB recovery demonstrations for off-trajectory correction
+- [ ] Aggregate policy-visited RGB corrections with visual DAgger
 - [ ] Evaluate unseen layouts and instruction paraphrases
 
 ## Upstream attribution and licensing boundary
@@ -1049,3 +1051,85 @@ gap is closed-loop distribution shift. The next dataset will therefore add
 rendered recovery perturbations around reach, lift, and transport targets. The
 scripted expert will label corrective actions from those perturbed states before
 the hierarchical and Flat policies are compared again on equal augmented data.
+
+## Milestone 18: recovery augmentation and its limit
+
+The recovery collector perturbs the mocap target after reach, lift, and
+transport, waits for the simulated arm to respond, and records the scripted
+expert's corrective actions back to the phase target. A three-episode smoke run
+at 8 mm standard deviation succeeds 3/3 before the formal collection uses new
+seeds 1800-1829:
+
+```bash
+python scripts/collect_scripted_dataset.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --output-dir data/vision/recovery_30_008 \
+  --episodes 30 \
+  --seed-start 1800 \
+  --colors red green blue \
+  --cube-pos-std 0.006 \
+  --recovery-pos-std 0.008 \
+  --record-rgb \
+  --camera front_close \
+  --render-width 128 \
+  --render-height 128 \
+  --min-success-rate 0.9
+```
+
+All 30 attempts succeed. The dataset contains 7,212 aligned frames and 251
+explicit recovery frames: 74 reach, 95 lift, and 82 transport. The hierarchical
+trainer's `--extra-train-dir` option adds these episodes only to training. The
+original `train_30` dataset still determines the same 21/9 split, so none of the
+new trajectories changes or enters the validation set.
+
+```bash
+python scripts/train_hierarchical_minivla.py \
+  --data-dir data/vision/train_30 \
+  --extra-train-dir data/vision/recovery_30_008 \
+  --epochs 30 \
+  --batch-size 64 \
+  --device cpu \
+  --output checkpoints/hierarchical_minivla_recovery.pt \
+  --metrics-output results/hierarchical_minivla_recovery_offline.json
+```
+
+Validation loss selects epoch 17. Training now uses 51 episodes and 11,827
+frames while validation remains the original 2,139 frames.
+
+| Fixed held-out metric | Original hierarchical | + RGB recovery |
+|---|---:|---:|
+| Phase accuracy | 90.70% | **96.26%** |
+| Teacher-routed action MAE | 0.405 mm | **0.298 mm** |
+| Autonomous-routed action MAE | 0.490 mm | **0.347 mm** |
+| Reach teacher-routed MAE | 0.907 mm | **0.570 mm** |
+
+The autonomous error falls by 29.2% relative to the original hierarchical
+checkpoint and by 40.1% relative to the `0.580 mm` Flat baseline. This is a
+real held-out improvement, but a second seed-1609 rollout shows why offline
+metrics remain insufficient:
+
+| Seen seed 1609 | Original hierarchical | + RGB recovery |
+|---|---:|---:|
+| Physical success | 0/1 | 0/1 |
+| Closest reach-target distance | 8.17 mm | 11.06 mm |
+| Predicted/observed phase agreement | 18.25% | 55.25% |
+| Controller transitions | Reach -> Descend | Reach -> Descend -> Grasp |
+| Close command | No | Yes |
+| Physical lift | No | No |
+
+Recovery training fixes much of the phase-classification failure: the policy no
+longer predicts release during the failed reach rollout, and it issues phases
+in the intended order. The apparent progress to grasp is not physical progress,
+however. Reach overshoots in positive Y, the controller advances to descend at
+step 224 after the arm is already 193 mm from the reach target, and it closes at
+step 258 while 188 mm from the grasp target. The observed physical phase never
+leaves reach.
+
+Random recovery offsets teach local corrections near successful scripted
+subgoals, but the learned rollout follows a different path and compounds error
+until it is far outside that local support. Increasing the amount of the same
+random recovery data is therefore a weak next experiment. Visual DAgger is the
+more direct intervention: run the current RGB policy, save the observations it
+actually visits, and query the scripted expert for the correct phase and action
+at those states. This targets the demonstrated failure distribution without
+giving simulator object coordinates to the deployed policy.

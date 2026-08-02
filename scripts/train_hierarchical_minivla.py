@@ -197,6 +197,7 @@ def evaluate(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=Path, required=True)
+    parser.add_argument("--extra-train-dir", type=Path)
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
@@ -218,7 +219,20 @@ def main() -> None:
         parser.error("--batch-size must be positive")
 
     paths = sorted(args.data_dir.expanduser().resolve().glob("episode_*.npz"))
-    train_paths, validation_paths = split_vision_episode_paths(paths, seed=args.seed)
+    base_train_paths, validation_paths = split_vision_episode_paths(
+        paths, seed=args.seed
+    )
+    extra_train_paths = []
+    if args.extra_train_dir is not None:
+        extra_train_paths = sorted(
+            args.extra_train_dir.expanduser().resolve().glob("episode_*.npz")
+        )
+        if not extra_train_paths:
+            parser.error("--extra-train-dir contains no episode_*.npz files")
+        overlap = set(paths) & set(extra_train_paths)
+        if overlap:
+            parser.error("--extra-train-dir overlaps the base dataset")
+    train_paths = base_train_paths + extra_train_paths
     train_arrays = load_vision_episodes(train_paths)
     validation_arrays = load_vision_episodes(validation_paths)
     vocabulary = build_vocabulary(train_arrays["instruction"].tolist())
@@ -310,7 +324,9 @@ def main() -> None:
     result = {
         "device": str(device),
         "num_parameters": sum(parameter.numel() for parameter in policy.parameters()),
-        "num_episodes": len(paths),
+        "num_base_episodes": len(paths),
+        "num_base_train_episodes": len(base_train_paths),
+        "num_extra_train_episodes": len(extra_train_paths),
         "num_train_episodes": len(train_paths),
         "num_validation_episodes": len(validation_paths),
         "num_train_frames": len(train_dataset),
@@ -335,6 +351,7 @@ def main() -> None:
         "validation": validation_metrics,
         "history": history,
         "train_episodes": [path.name for path in train_paths],
+        "extra_train_episodes": [path.name for path in extra_train_paths],
         "validation_episodes": [path.name for path in validation_paths],
         "instruction_frame_counts": {
             str(instruction): int(count)
