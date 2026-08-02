@@ -4,4 +4,5 @@ __pycache__/
 *.egg-info/
 *.npz
 /data/
+/checkpoints/
 .DS_Store

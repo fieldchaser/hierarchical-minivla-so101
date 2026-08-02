@@ -1,0 +1,14 @@
+{
+  "device": "mps",
+  "train_episodes": 15,
+  "validation_episodes": 4,
+  "train_steps": 3248,
+  "validation_steps": 955,
+  "best_epoch": 31,
+  "loss": 0.5917118787765503,
+  "delta_loss": 0.5436303019523621,
+  "gripper_loss": 0.04808155447244644,
+  "delta_mae_mm": 0.7660514675080776,
+  "gripper_accuracy": 0.9895287752151489,
+  "checkpoint": "checkpoints/state_goal_policy.pt"
+}

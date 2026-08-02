@@ -1,0 +1,168 @@
+{
+  "seed_start": 100,
+  "num_successes": 0,
+  "num_episodes": 10,
+  "success_rate": 0.0,
+  "results": [
+    {
+      "seed": 100,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.199126,
+        0.339933,
+        0.101524
+      ],
+      "bin_xyz": [
+        -0.19553,
+        0.356626,
+        0.021
+      ]
+    },
+    {
+      "seed": 101,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.210631,
+        0.723515,
+        0.094273
+      ],
+      "bin_xyz": [
+        -0.195754,
+        0.554126,
+        0.021
+      ]
+    },
+    {
+      "seed": 102,
+      "goal_cube": "blue",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.202094,
+        0.445392,
+        0.023155
+      ],
+      "bin_xyz": [
+        -0.187322,
+        0.36131,
+        0.021
+      ]
+    },
+    {
+      "seed": 103,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.259221,
+        0.640655,
+        0.169534
+      ],
+      "bin_xyz": [
+        -0.212632,
+        0.455117,
+        0.021
+      ]
+    },
+    {
+      "seed": 104,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.199997,
+        0.700345,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.201751,
+        0.447251,
+        0.021
+      ]
+    },
+    {
+      "seed": 105,
+      "goal_cube": "blue",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.199649,
+        0.70488,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.190392,
+        0.553361,
+        0.021
+      ]
+    },
+    {
+      "seed": 106,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.20115,
+        0.748075,
+        0.097511
+      ],
+      "bin_xyz": [
+        -0.201102,
+        0.693625,
+        0.021
+      ]
+    },
+    {
+      "seed": 107,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.239977,
+        0.70682,
+        0.140379
+      ],
+      "bin_xyz": [
+        -0.202662,
+        0.696356,
+        0.021
+      ]
+    },
+    {
+      "seed": 108,
+      "goal_cube": "blue",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.211456,
+        0.698559,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.195821,
+        0.565075,
+        0.021
+      ]
+    },
+    {
+      "seed": 109,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.264989,
+        0.759999,
+        0.156187
+      ],
+      "bin_xyz": [
+        -0.201352,
+        0.701822,
+        0.021
+      ]
+    }
+  ]
+}

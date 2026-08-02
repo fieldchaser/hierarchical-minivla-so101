@@ -63,7 +63,7 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Goal-conditioned data contract and runnable BC smoke baseline
 - [x] Upstream multicube environment smoke-test entry point
 - [x] Record or generate MuJoCo multicube demonstrations
-- [ ] Train a neural state + one-hot goal baseline on real simulation data
+- [x] Train a neural state + one-hot goal baseline on real simulation data
 - [ ] Add RGB observations and natural-language goals (Flat MiniVLA)
 - [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
 - [ ] Evaluate unseen layouts and instruction paraphrases
@@ -148,3 +148,55 @@ while cycling through all three goal colors. Seed
 18 was the only failure: the red cube remained near the gripper at a height of
 approximately 8.2 cm after the release phase. This gives us a real randomized
 MuJoCo dataset for the next milestone: a learned neural state-and-goal policy.
+
+## Milestone 3: learned state-and-goal baseline
+
+The first learned MuJoCo policy is a two-layer MLP. It receives robot state,
+all cube positions, the one-hot task goal, and the bin position. As in the
+linear smoke baseline, the input also makes goal selection explicit by adding
+the selected cube position and relative target/bin geometry. The policy
+regresses a bounded Cartesian delta and classifies the gripper as open or
+closed.
+
+Install the learning dependency, train, and evaluate with:
+
+```bash
+python -m pip install -e '.[learn,sim]'
+
+python scripts/train_state_policy.py \
+  --data-dir data/scripted/randomized \
+  --output checkpoints/state_goal_policy.pt \
+  --metrics-output results/state_policy_offline.json
+
+python scripts/evaluate_state_policy.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --checkpoint checkpoints/state_goal_policy.pt \
+  --episodes 10 \
+  --seed-start 100 \
+  --output results/state_policy_unseen.json
+```
+
+The split is performed by whole episode, rather than by randomly mixing adjacent
+timesteps. Fifteen episodes (3,248 steps) were used for training and four
+episodes (955 steps) for validation. Early stopping selected epoch 31.
+
+| Metric | Result |
+|---|---:|
+| Validation Cartesian MAE | 0.766 mm |
+| Validation gripper accuracy | 98.95% |
+| Closed loop, collected seeds 0-9 | 0/10 |
+| Closed loop, unseen seeds 100-109 | 0/10 |
+
+The zero closed-loop success rate is retained as a negative baseline, not hidden
+behind the strong offline metrics. The learned controller frequently grasps and
+lifts the correct cube, but does not reliably transition from lifting to
+transport and release. Small one-step errors compound until the state leaves the
+demonstration distribution. A conservative workspace bound prevents these
+errors from driving the MuJoCo mocap target into numerically unsafe regions.
+
+This failure identifies the next concrete research question: whether explicit
+phase supervision can resolve the long-horizon ambiguity that the flat policy
+cannot. The existing demonstrations already contain reach, descend, grasp,
+lift, transport, and release labels, so the next comparison can hold the data
+and network size fixed while changing only the policy structure. Exact metrics
+and per-seed outcomes are stored under `results/`.

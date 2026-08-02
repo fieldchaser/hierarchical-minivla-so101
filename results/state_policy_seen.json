@@ -1,0 +1,168 @@
+{
+  "seed_start": 0,
+  "num_successes": 0,
+  "num_episodes": 10,
+  "success_rate": 0.0,
+  "results": [
+    {
+      "seed": 0,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.252886,
+        0.757117,
+        0.155123
+      ],
+      "bin_xyz": [
+        -0.204222,
+        0.692407,
+        0.021
+      ]
+    },
+    {
+      "seed": 1,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.226542,
+        0.757435,
+        0.123996
+      ],
+      "bin_xyz": [
+        -0.197813,
+        0.701765,
+        0.021
+      ]
+    },
+    {
+      "seed": 2,
+      "goal_cube": "blue",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.261454,
+        0.260679,
+        0.166115
+      ],
+      "bin_xyz": [
+        -0.198313,
+        0.446677,
+        0.021
+      ]
+    },
+    {
+      "seed": 3,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.197491,
+        0.696593,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.205191,
+        0.369938,
+        0.021
+      ]
+    },
+    {
+      "seed": 4,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.244475,
+        0.667905,
+        0.143844
+      ],
+      "bin_xyz": [
+        -0.209649,
+        0.551451,
+        0.021
+      ]
+    },
+    {
+      "seed": 5,
+      "goal_cube": "blue",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.234718,
+        0.284731,
+        0.154534
+      ],
+      "bin_xyz": [
+        -0.195508,
+        0.359809,
+        0.021
+      ]
+    },
+    {
+      "seed": 6,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.270239,
+        0.769,
+        0.162694
+      ],
+      "bin_xyz": [
+        -0.19826,
+        0.553308,
+        0.021
+      ]
+    },
+    {
+      "seed": 7,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.244276,
+        0.763494,
+        0.149168
+      ],
+      "bin_xyz": [
+        -0.202953,
+        0.696277,
+        0.021
+      ]
+    },
+    {
+      "seed": 8,
+      "goal_cube": "blue",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.223433,
+        0.355212,
+        0.16527
+      ],
+      "bin_xyz": [
+        -0.194259,
+        0.358354,
+        0.021
+      ]
+    },
+    {
+      "seed": 9,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_cube_xyz": [
+        -0.2063,
+        0.451916,
+        0.125441
+      ],
+      "bin_xyz": [
+        -0.202366,
+        0.444826,
+        0.021
+      ]
+    }
+  ]
+}

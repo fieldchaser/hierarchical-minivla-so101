@@ -13,7 +13,7 @@ dependencies = ["numpy>=1.26"]
 
 [project.optional-dependencies]
 sim = ["mujoco>=3.3"]
+learn = ["torch>=2.2"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
