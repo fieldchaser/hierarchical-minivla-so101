@@ -2,16 +2,17 @@
 
 A simulation-first research project for language-conditioned, multi-task robotic manipulation. The long-term question is whether explicit skill phases improve data efficiency and generalization over a flat vision-language-action policy.
 
-## Current milestone: first Hierarchical MiniVLA training path
+## Current milestone: held-out Hierarchical MiniVLA evaluation
 
-The Flat MiniVLA baseline reaches `0.578 mm` held-out offline Cartesian MAE but
-succeeds in 0/10 unseen closed-loop layouts. The repository now adds a 111K-
-parameter Hierarchical MiniVLA with a shared RGB-language-proprioception
-encoder, a six-class skill-phase head, and one action head per phase. On a
-phase-balanced batch from a real rendered trajectory, the first pipeline proof
-reaches 100% phase accuracy, 100% gripper accuracy, and `0.004 mm` Cartesian
-MAE. This is a batch-overfit result rather than a closed-loop claim; Milestone
-15 defines the architecture and next full-dataset experiment.
+The Flat MiniVLA baseline reaches `0.580 mm` held-out offline Cartesian MAE but
+succeeds in 0/10 unseen closed-loop layouts. The 111K-parameter Hierarchical
+MiniVLA now trains on the same 21 episodes and is evaluated on the same nine
+held-out episodes. Its skill-phase classifier reaches 90.70% accuracy. Using
+the predicted phase to route actions, the complete offline policy reaches
+`0.490 mm` Cartesian MAE and 99.06% gripper accuracy, reducing action error by
+15.4% relative to the Flat baseline. Milestone 16 reports teacher-routed and
+autonomous-routed results separately and identifies lift recognition as the
+main remaining phase error. Closed-loop evaluation is still required.
 
 Milestone 0 began with the smallest useful symbolic contract:
 
@@ -78,7 +79,7 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Evaluate and diagnose Flat MiniVLA in closed-loop MuJoCo rollouts
 - [x] Add phase supervision and phase-conditioned Hierarchical MiniVLA heads
 - [x] Overfit one real phase-balanced Hierarchical MiniVLA batch
-- [ ] Train and evaluate Hierarchical MiniVLA on complete held-out episodes
+- [x] Train and evaluate Hierarchical MiniVLA on complete held-out episodes
 - [ ] Evaluate unseen layouts and instruction paraphrases
 
 ## Upstream attribution and licensing boundary
@@ -933,3 +934,57 @@ test. As with every batch-overfit proof, these numbers establish implementation
 correctness, not generalization. The next milestone will train the hierarchical
 policy on the same 21 training and nine held-out episodes as the Flat baseline,
 report per-phase validation metrics, and only then run closed-loop rollouts.
+
+## Milestone 16: held-out Hierarchical MiniVLA evaluation
+
+The formal hierarchical trainer uses exactly the same deterministic split as
+the Flat baseline: 21 complete training episodes (4,615 frames) and nine
+complete held-out episodes (2,139 frames), with one held-out trajectory for
+each color-instruction pair. No phase or frame from a held-out episode enters
+training. All six action heads train on their expert-assigned frames, while
+inverse-frequency weights prevent the phase classifier from favoring longer
+transport segments.
+
+```bash
+python scripts/train_hierarchical_minivla.py \
+  --data-dir data/vision/train_30 \
+  --epochs 30 \
+  --batch-size 64 \
+  --device cpu \
+  --output checkpoints/hierarchical_minivla.pt \
+  --metrics-output results/hierarchical_minivla_offline.json
+```
+
+Validation loss selects epoch 16. Evaluation reports two routes through the
+same checkpoint. `Teacher-routed` chooses an action head using the recorded
+expert phase and isolates action-head quality. `Autonomous-routed` uses the
+model's predicted phase and is the valid end-to-end offline result.
+
+| Held-out policy route | Cartesian MAE | Gripper accuracy | Phase accuracy |
+|---|---:|---:|---:|
+| Flat MiniVLA, single head | 0.580 mm | 99.11% | -- |
+| Hierarchical, teacher-routed | 0.405 mm | 100% | 90.70% |
+| Hierarchical, autonomous-routed | 0.490 mm | 99.06% | 90.70% |
+
+The autonomous hierarchical route reduces Cartesian error by 15.4% relative
+to the Flat baseline. Its 0.085 mm gap from teacher routing quantifies the cost
+of phase misclassification rather than hiding it behind expert labels.
+
+| True phase | Frames | Phase accuracy | Teacher MAE | Autonomous MAE |
+|---|---:|---:|---:|---:|
+| Reach | 371 | 85.98% | 0.907 mm | 0.940 mm |
+| Descend | 234 | 91.88% | 0.397 mm | 0.516 mm |
+| Grasp | 270 | 95.93% | 0.138 mm | 0.142 mm |
+| Lift | 279 | 75.99% | 0.278 mm | 0.589 mm |
+| Transport | 580 | 92.93% | 0.494 mm | 0.583 mm |
+| Release | 405 | 97.78% | 0.087 mm | 0.095 mm |
+
+Lift is the clearest routing bottleneck: its action head has low teacher-routed
+error, but autonomous error more than doubles when the classifier confuses the
+phase. Reach remains the largest regression error even with the correct head,
+so it is an action/generalization problem rather than only a routing problem.
+This separation gives the next closed-loop experiment concrete diagnostics:
+track predicted phase progression, prevent backward phase jumps, and report
+whether failures originate before grasp, during lift, or near release. The
+offline improvement is encouraging, but it is not counted as manipulation
+success until the policy completes fresh MuJoCo rollouts.
