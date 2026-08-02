@@ -65,6 +65,8 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Record or generate MuJoCo multicube demonstrations
 - [x] Train a neural state + one-hot goal baseline on real simulation data
 - [x] Compare flat and hierarchical state policies
+- [x] Expand to recovery-augmented 120-episode data
+- [ ] Aggregate on-policy DAgger corrections
 - [ ] Add RGB observations and natural-language goals (Flat MiniVLA)
 - [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
 - [ ] Evaluate unseen layouts and instruction paraphrases
@@ -255,3 +257,56 @@ hierarchical one-step behavior cloning currently fit expert trajectories but do
 not recover after their own small errors move them away from those trajectories.
 The complete learned-phase and oracle-phase outcomes are stored under
 `results/`.
+
+## Milestone 5: recovery augmentation and state-contract correction
+
+The collector can now inject small, reproducible Cartesian perturbations after
+the expert reaches the safe reach, lift, and transport targets. It does not edit
+cube state or treat the injected motion as an expert action. Only the physical
+controller's subsequent correction is added to the behavior-cloning data, and
+every corrective row is marked by a `recovery` flag.
+
+```bash
+python scripts/collect_scripted_dataset.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --output-dir data/scripted/recovery_mocap_120 \
+  --episodes 120 \
+  --recovery-pos-std 0.006
+```
+
+All 120 attempts succeeded, evenly covering the three goal colors. The dataset
+contains 27,631 aligned state-action pairs, including 768 explicitly perturbed
+recovery rows. Data remains local and ignored by Git; the manifest records the
+generation settings and every attempted seed.
+
+This milestone also corrected an important state-action contract mismatch. The
+expert computes Cartesian commands relative to the MuJoCo mocap target, while
+the original learner observed only the lagging physical end-effector position.
+New trajectories store `state_mocap_xyz`, increasing the learned state input
+from 34 to 37 dimensions. Evaluation remains backward compatible with old
+34-dimensional checkpoints.
+
+Retraining on the corrected 120-episode dataset produced:
+
+| Metric | 19-episode Flat | 120-episode Flat | 19-episode Hier. | 120-episode Hier. |
+|---|---:|---:|---:|---:|
+| Cartesian MAE | 0.766 mm | 0.421 mm | 0.457 mm | 0.277 mm |
+| Gripper accuracy | 98.95% | 99.11% | 100% | 100% |
+| Phase accuracy | — | — | 81.68% | 94.51% |
+| Collected-layout success | 0/10 | 0/10 | 0/10 | 0/10 |
+| Unseen-layout success | 0/10 | 0/10 | 0/10 | 0/10 |
+
+The larger corrected dataset therefore improves imitation quality but still
+does not solve closed-loop control. A representative flat rollout converges to
+the descend/grasp height and outputs zero motion because one state must represent
+multiple stages. The hierarchical reach head converges about 6 mm from its
+phase boundary, where both its action and predicted phase remain at reach.
+Oracle phase transitions move several episodes through release, but the cube
+still stops near the bin at roughly 8 cm height rather than settling inside it.
+
+Random perturbations around expert waypoints are useful augmentation, but they
+are not yet true DAgger because the learned policy does not determine which
+states receive labels. The next milestone must roll out the current policy,
+capture its actual boundary failures, and query the scripted expert for recovery
+actions at those states. That on-policy aggregation step is now required before
+adding image observations.

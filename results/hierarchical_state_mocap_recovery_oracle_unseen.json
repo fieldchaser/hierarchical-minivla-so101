@@ -1,0 +1,239 @@
+{
+  "seed_start": 200,
+  "num_successes": 0,
+  "num_episodes": 10,
+  "success_rate": 0.0,
+  "transition_votes": 3,
+  "phase_source": "oracle",
+  "results": [
+    {
+      "seed": 200,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_phase": "descend",
+      "phase_transitions": [
+        "reach",
+        "descend"
+      ],
+      "final_cube_xyz": [
+        -0.203034,
+        0.551676,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.20466,
+        0.446115,
+        0.021
+      ]
+    },
+    {
+      "seed": 201,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_phase": "descend",
+      "phase_transitions": [
+        "reach",
+        "descend"
+      ],
+      "final_cube_xyz": [
+        -0.189639,
+        0.701695,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.198137,
+        0.55601,
+        0.021
+      ]
+    },
+    {
+      "seed": 202,
+      "goal_cube": "blue",
+      "success": false,
+      "steps": 400,
+      "final_phase": "descend",
+      "phase_transitions": [
+        "reach",
+        "descend"
+      ],
+      "final_cube_xyz": [
+        -0.194721,
+        0.703826,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.191541,
+        0.446392,
+        0.021
+      ]
+    },
+    {
+      "seed": 203,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.20669,
+        0.652837,
+        0.082327
+      ],
+      "bin_xyz": [
+        -0.205174,
+        0.699402,
+        0.021
+      ]
+    },
+    {
+      "seed": 204,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_phase": "descend",
+      "phase_transitions": [
+        "reach",
+        "descend"
+      ],
+      "final_cube_xyz": [
+        -0.205035,
+        0.695067,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.199327,
+        0.342138,
+        0.021
+      ]
+    },
+    {
+      "seed": 205,
+      "goal_cube": "blue",
+      "success": false,
+      "steps": 400,
+      "final_phase": "transport",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport"
+      ],
+      "final_cube_xyz": [
+        -0.187303,
+        0.361721,
+        0.024179
+      ],
+      "bin_xyz": [
+        -0.191005,
+        0.45191,
+        0.021
+      ]
+    },
+    {
+      "seed": 206,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_phase": "descend",
+      "phase_transitions": [
+        "reach",
+        "descend"
+      ],
+      "final_cube_xyz": [
+        -0.191712,
+        0.553076,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.200274,
+        0.707299,
+        0.021
+      ]
+    },
+    {
+      "seed": 207,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.206231,
+        0.664733,
+        0.087719
+      ],
+      "bin_xyz": [
+        -0.203063,
+        0.715146,
+        0.021
+      ]
+    },
+    {
+      "seed": 208,
+      "goal_cube": "blue",
+      "success": false,
+      "steps": 400,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.194527,
+        0.496723,
+        0.081
+      ],
+      "bin_xyz": [
+        -0.198614,
+        0.546246,
+        0.021
+      ]
+    },
+    {
+      "seed": 209,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.190643,
+        0.393947,
+        0.085238
+      ],
+      "bin_xyz": [
+        -0.196502,
+        0.344845,
+        0.021
+      ]
+    }
+  ]
+}

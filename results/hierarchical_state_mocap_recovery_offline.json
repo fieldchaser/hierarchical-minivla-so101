@@ -1,0 +1,32 @@
+{
+  "device": "cpu",
+  "train_episodes": 96,
+  "validation_episodes": 24,
+  "train_steps": 22098,
+  "validation_steps": 5533,
+  "best_epoch": 56,
+  "loss": 0.377815306186676,
+  "delta_loss": 0.176317036151886,
+  "gripper_loss": 3.7607449030474527e-06,
+  "phase_loss": 0.2014945149421692,
+  "delta_mae_mm": 0.27654992300085723,
+  "gripper_accuracy": 1.0,
+  "phase_accuracy": 0.9450569152832031,
+  "per_phase_accuracy": [
+    0.9786477088928223,
+    0.9583333134651184,
+    0.9666666388511658,
+    0.8147684335708618,
+    0.9563735723495483,
+    0.9777777791023254
+  ],
+  "phase_names": [
+    "reach",
+    "descend",
+    "grasp",
+    "lift",
+    "transport",
+    "release"
+  ],
+  "checkpoint": "checkpoints/hierarchical_state_policy_mocap_recovery.pt"
+}

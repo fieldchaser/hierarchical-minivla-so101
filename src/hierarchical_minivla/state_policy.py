@@ -69,6 +69,14 @@ def load_episodes(paths: Sequence[str | Path]) -> tuple[np.ndarray, np.ndarray, 
                 states["state_goal"],
                 states["goal_pos"],
             )
+            if "state_mocap_xyz" in data:
+                episode_features = np.concatenate(
+                    [
+                        episode_features,
+                        np.asarray(data["state_mocap_xyz"], dtype=np.float32),
+                    ],
+                    axis=1,
+                )
             episode_deltas = np.asarray(data["action_ee_xyz"], dtype=np.float32)
             episode_gripper = np.asarray(data["action_gripper"], dtype=np.float32)
 
@@ -105,9 +113,11 @@ def split_episode_paths(
     return shuffled[num_validation:], shuffled[:num_validation]
 
 
-def observation_to_feature(observation: Mapping[str, np.ndarray]) -> np.ndarray:
+def observation_to_feature(
+    observation: Mapping[str, np.ndarray], mocap_xyz: np.ndarray | None = None
+) -> np.ndarray:
     """Convert one upstream environment observation to the learned policy input."""
-    return build_features(
+    feature = build_features(
         observation["ee_pos"][None],
         observation["joints"][None],
         observation["gripper"][None],
@@ -115,6 +125,9 @@ def observation_to_feature(observation: Mapping[str, np.ndarray]) -> np.ndarray:
         observation["goal"][None],
         observation["goal_pos"][None],
     )[0]
+    if mocap_xyz is not None:
+        feature = np.concatenate([feature, np.asarray(mocap_xyz, dtype=np.float32)])
+    return feature
 
 
 class StateGoalPolicy(nn.Module):

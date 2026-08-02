@@ -34,6 +34,10 @@ class StatePolicyTest(unittest.TestCase):
             "goal_pos": np.zeros(3),
         }
         self.assertEqual(observation_to_feature(observation).shape, (34,))
+        self.assertEqual(
+            observation_to_feature(observation, np.zeros(3)).shape,
+            (37,),
+        )
 
     def test_checkpoint_round_trip_preserves_action(self) -> None:
         policy = StateGoalPolicy(

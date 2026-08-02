@@ -1,0 +1,14 @@
+{
+  "device": "cpu",
+  "train_episodes": 96,
+  "validation_episodes": 24,
+  "train_steps": 22098,
+  "validation_steps": 5533,
+  "best_epoch": 73,
+  "loss": 0.3056558668613434,
+  "delta_loss": 0.2694925367832184,
+  "gripper_loss": 0.036163318902254105,
+  "delta_mae_mm": 0.42140058940276504,
+  "gripper_accuracy": 0.991144061088562,
+  "checkpoint": "checkpoints/state_goal_policy_mocap_recovery.pt"
+}

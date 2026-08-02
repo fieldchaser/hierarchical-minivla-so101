@@ -50,15 +50,27 @@ def is_released_in_bin(
     return bool(in_xy and in_z and gripper_angle > 0.5)
 
 
-def run_scripted_episode(env: Any) -> ScriptedEpisode:
+def run_scripted_episode(
+    env: Any,
+    recovery_rng: np.random.Generator | None = None,
+    recovery_pos_std: float = 0.0,
+) -> ScriptedEpisode:
     """Run one pick-and-place episode for the environment's selected cube.
 
     The environment must be the upstream multicube scene. Cube color and layout
-    may vary between environments. States are captured before each command so
-    every row is a behavior-cloning pair ``(observation_t, action_t)``.
+    may vary between environments. Optional recovery perturbations move only the
+    mocap target, then record the expert's corrective actions. States are captured
+    before each command so every row is a behavior-cloning pair
+    ``(observation_t, action_t)``.
     """
+    if recovery_pos_std < 0:
+        raise ValueError("recovery_pos_std must be non-negative")
+    if recovery_pos_std > 0 and recovery_rng is None:
+        raise ValueError("recovery_rng is required when recovery noise is enabled")
+
     records: dict[str, list[np.ndarray | int | float]] = {
         "state_ee_xyz": [],
+        "state_mocap_xyz": [],
         "state_joints": [],
         "state_gripper": [],
         "cubes_xyz": [],
@@ -68,14 +80,21 @@ def run_scripted_episode(env: Any) -> ScriptedEpisode:
         "action_ee_xyz": [],
         "action_gripper": [],
         "phase": [],
+        "recovery": [],
     }
 
-    def step(target: np.ndarray, gripper_command: float, phase: str) -> None:
+    def step(
+        target: np.ndarray,
+        gripper_command: float,
+        phase: str,
+        recovery: bool = False,
+    ) -> None:
         obs = env.get_obs()
         mocap = env.data.mocap_pos[env.mocap_id].copy()
         delta = bounded_delta(mocap, target)
 
         records["state_ee_xyz"].append(obs["ee_pos"].copy())
+        records["state_mocap_xyz"].append(mocap.copy())
         records["state_joints"].append(obs["joints"].copy())
         records["state_gripper"].append(obs["gripper"].copy())
         records["cubes_xyz"].append(obs["cubes_xyz"].copy())
@@ -85,6 +104,7 @@ def run_scripted_episode(env: Any) -> ScriptedEpisode:
         records["action_ee_xyz"].append(delta.copy())
         records["action_gripper"].append(float(gripper_command))
         records["phase"].append(PHASE_NAMES.index(phase))
+        records["recovery"].append(recovery)
 
         env.set_mocap_pos(mocap + delta)
         env.set_gripper(gripper_command)
@@ -95,6 +115,7 @@ def run_scripted_episode(env: Any) -> ScriptedEpisode:
         gripper_command: float,
         phase: str,
         settle_steps: int,
+        add_recovery: bool = False,
         max_steps: int = 120,
     ) -> None:
         for _ in range(max_steps):
@@ -104,6 +125,25 @@ def run_scripted_episode(env: Any) -> ScriptedEpisode:
             step(target, gripper_command, phase)
         else:
             raise RuntimeError(f"Expert phase {phase!r} did not reach its target")
+
+        if add_recovery and recovery_pos_std > 0:
+            assert recovery_rng is not None
+            offset = recovery_rng.normal(0.0, recovery_pos_std, size=3)
+            offset = np.clip(offset, -2.0 * recovery_pos_std, 2.0 * recovery_pos_std)
+            perturbed_target = env.data.mocap_pos[env.mocap_id].copy() + offset
+            perturbed_target[2] = np.clip(perturbed_target[2], 0.06, 0.23)
+            env.set_mocap_pos(perturbed_target)
+            env.set_gripper(gripper_command)
+            for _ in range(3):
+                env.step()
+
+            for _ in range(max_steps):
+                mocap = env.data.mocap_pos[env.mocap_id]
+                if np.linalg.norm(np.asarray(target) - mocap) < 0.001:
+                    break
+                step(target, gripper_command, phase, recovery=True)
+            else:
+                raise RuntimeError(f"Recovery in phase {phase!r} did not converge")
 
         for _ in range(settle_steps):
             step(env.data.mocap_pos[env.mocap_id].copy(), gripper_command, phase)
@@ -123,14 +163,26 @@ def run_scripted_episode(env: Any) -> ScriptedEpisode:
     above_cube = grasp_target.copy()
     above_cube[2] = 0.15
 
-    move_to(above_cube, gripper_command=1.0, phase="reach", settle_steps=5)
+    move_to(
+        above_cube,
+        gripper_command=1.0,
+        phase="reach",
+        settle_steps=5,
+        add_recovery=True,
+    )
     move_to(grasp_target, gripper_command=1.0, phase="descend", settle_steps=8)
     hold(gripper_command=-0.174, phase="grasp", num_steps=30)
     grasp_contact_angle = env.get_gripper_angle()
 
     lift_target = grasp_target.copy()
     lift_target[2] = 0.17
-    move_to(lift_target, gripper_command=-0.174, phase="lift", settle_steps=8)
+    move_to(
+        lift_target,
+        gripper_command=-0.174,
+        phase="lift",
+        settle_steps=8,
+        add_recovery=True,
+    )
 
     # Preserve the measured wrist-to-cube offset so the cube, rather than the
     # wrist site, is positioned over the center of the bin.
@@ -139,7 +191,13 @@ def run_scripted_episode(env: Any) -> ScriptedEpisode:
         [bin_xyz[0] + held_offset[0], bin_xyz[1] + held_offset[1], 0.17],
         dtype=np.float64,
     )
-    move_to(transport_target, gripper_command=-0.174, phase="transport", settle_steps=10)
+    move_to(
+        transport_target,
+        gripper_command=-0.174,
+        phase="transport",
+        settle_steps=10,
+        add_recovery=True,
+    )
     hold(gripper_command=1.0, phase="release", num_steps=45)
 
     final_cube_xyz = env.get_target_cube_state()[:3].copy()
@@ -149,10 +207,12 @@ def run_scripted_episode(env: Any) -> ScriptedEpisode:
         env.get_gripper_angle(),
     )
 
-    arrays = {
-        key: np.asarray(values, dtype=np.int64 if key == "phase" else np.float32)
-        for key, values in records.items()
-    }
+    arrays = {}
+    for key, values in records.items():
+        dtype = np.int64 if key == "phase" else np.float32
+        if key == "recovery":
+            dtype = np.bool_
+        arrays[key] = np.asarray(values, dtype=dtype)
     arrays["action_gripper"] = arrays["action_gripper"].reshape(-1, 1)
     arrays["phase_names"] = np.asarray(PHASE_NAMES)
     return ScriptedEpisode(

@@ -1,0 +1,235 @@
+{
+  "seed_start": 0,
+  "num_successes": 0,
+  "num_episodes": 10,
+  "success_rate": 0.0,
+  "transition_votes": 3,
+  "phase_source": "oracle",
+  "results": [
+    {
+      "seed": 0,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_phase": "descend",
+      "phase_transitions": [
+        "reach",
+        "descend"
+      ],
+      "final_cube_xyz": [
+        -0.196157,
+        0.550629,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.204222,
+        0.692407,
+        0.021
+      ]
+    },
+    {
+      "seed": 1,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.198877,
+        0.650081,
+        0.084687
+      ],
+      "bin_xyz": [
+        -0.197813,
+        0.701765,
+        0.021
+      ]
+    },
+    {
+      "seed": 2,
+      "goal_cube": "blue",
+      "success": false,
+      "steps": 400,
+      "final_phase": "transport",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport"
+      ],
+      "final_cube_xyz": [
+        -0.195778,
+        0.357017,
+        0.026235
+      ],
+      "bin_xyz": [
+        -0.198313,
+        0.446677,
+        0.021
+      ]
+    },
+    {
+      "seed": 3,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_phase": "descend",
+      "phase_transitions": [
+        "reach",
+        "descend"
+      ],
+      "final_cube_xyz": [
+        -0.197491,
+        0.696593,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.205191,
+        0.369938,
+        0.021
+      ]
+    },
+    {
+      "seed": 4,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.200625,
+        0.503238,
+        0.081
+      ],
+      "bin_xyz": [
+        -0.209649,
+        0.551451,
+        0.021
+      ]
+    },
+    {
+      "seed": 5,
+      "goal_cube": "blue",
+      "success": false,
+      "steps": 400,
+      "final_phase": "descend",
+      "phase_transitions": [
+        "reach",
+        "descend"
+      ],
+      "final_cube_xyz": [
+        -0.203167,
+        0.545277,
+        0.020004
+      ],
+      "bin_xyz": [
+        -0.195508,
+        0.359809,
+        0.021
+      ]
+    },
+    {
+      "seed": 6,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_phase": "release",
+      "phase_transitions": [
+        "reach",
+        "descend",
+        "grasp",
+        "lift",
+        "transport",
+        "release"
+      ],
+      "final_cube_xyz": [
+        -0.190157,
+        0.50682,
+        0.081
+      ],
+      "bin_xyz": [
+        -0.19826,
+        0.553308,
+        0.021
+      ]
+    },
+    {
+      "seed": 7,
+      "goal_cube": "green",
+      "success": false,
+      "steps": 400,
+      "final_phase": "descend",
+      "phase_transitions": [
+        "reach",
+        "descend"
+      ],
+      "final_cube_xyz": [
+        -0.202728,
+        0.54405,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.202953,
+        0.696277,
+        0.021
+      ]
+    },
+    {
+      "seed": 8,
+      "goal_cube": "blue",
+      "success": false,
+      "steps": 400,
+      "final_phase": "descend",
+      "phase_transitions": [
+        "reach",
+        "descend"
+      ],
+      "final_cube_xyz": [
+        -0.205743,
+        0.555362,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.194259,
+        0.358354,
+        0.021
+      ]
+    },
+    {
+      "seed": 9,
+      "goal_cube": "red",
+      "success": false,
+      "steps": 400,
+      "final_phase": "descend",
+      "phase_transitions": [
+        "reach",
+        "descend"
+      ],
+      "final_cube_xyz": [
+        -0.209938,
+        0.703937,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.202366,
+        0.444826,
+        0.021
+      ]
+    }
+  ]
+}

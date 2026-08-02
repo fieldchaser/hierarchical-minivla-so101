@@ -96,7 +96,9 @@ def main() -> None:
         phase_steps = 0
         success = False
         for step in range(1, args.max_steps + 1):
-            feature = observation_to_feature(env.get_obs())
+            mocap = env.data.mocap_pos[env.mocap_id]
+            mocap_feature = mocap if policy.feature_mean.numel() == 37 else None
+            feature = observation_to_feature(env.get_obs(), mocap_feature)
             previous_phase = tracker.current_phase
             if args.phase_source == "learned":
                 active_phase = tracker.update(policy.predict_phase(feature))

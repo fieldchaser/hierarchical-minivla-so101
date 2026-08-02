@@ -60,7 +60,10 @@ def main() -> None:
 
         success = False
         for step in range(1, args.max_steps + 1):
-            delta, gripper = policy.act(observation_to_feature(env.get_obs()))
+            mocap = env.data.mocap_pos[env.mocap_id]
+            mocap_feature = mocap if policy.feature_mean.numel() == 37 else None
+            feature = observation_to_feature(env.get_obs(), mocap_feature)
+            delta, gripper = policy.act(feature)
             target = np.clip(
                 env.data.mocap_pos[env.mocap_id] + delta,
                 WORKSPACE_LOW,
