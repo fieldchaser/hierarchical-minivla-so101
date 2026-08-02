@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 
@@ -16,6 +16,19 @@ PHASE_NAMES = (
     "transport",
     "release",
 )
+INSTRUCTION_TEMPLATES = (
+    "Pick up the {color} cube and place it in the bin.",
+    "Move the {color} block into the container.",
+    "Grasp the {color} object and put it in the box.",
+)
+
+
+def instruction_for_goal(goal_cube: str, variant: int = 0) -> str:
+    """Return a deterministic natural-language instruction for a goal color."""
+    if goal_cube not in ("red", "green", "blue"):
+        raise ValueError(f"Unsupported goal cube: {goal_cube}")
+    template = INSTRUCTION_TEMPLATES[variant % len(INSTRUCTION_TEMPLATES)]
+    return template.format(color=goal_cube)
 
 
 @dataclass(frozen=True)
@@ -54,6 +67,8 @@ def run_scripted_episode(
     env: Any,
     recovery_rng: np.random.Generator | None = None,
     recovery_pos_std: float = 0.0,
+    frame_observer: Callable[[], np.ndarray] | None = None,
+    instruction: str | None = None,
 ) -> ScriptedEpisode:
     """Run one pick-and-place episode for the environment's selected cube.
 
@@ -67,8 +82,10 @@ def run_scripted_episode(
         raise ValueError("recovery_pos_std must be non-negative")
     if recovery_pos_std > 0 and recovery_rng is None:
         raise ValueError("recovery_rng is required when recovery noise is enabled")
+    if frame_observer is not None and instruction is None:
+        raise ValueError("instruction is required when recording RGB frames")
 
-    records: dict[str, list[np.ndarray | int | float]] = {
+    records: dict[str, list[np.ndarray | int | float | str]] = {
         "state_ee_xyz": [],
         "state_mocap_xyz": [],
         "state_joints": [],
@@ -82,6 +99,9 @@ def run_scripted_episode(
         "phase": [],
         "recovery": [],
     }
+    if frame_observer is not None:
+        records["rgb"] = []
+        records["instruction"] = []
 
     def step(
         target: np.ndarray,
@@ -105,6 +125,12 @@ def run_scripted_episode(
         records["action_gripper"].append(float(gripper_command))
         records["phase"].append(PHASE_NAMES.index(phase))
         records["recovery"].append(recovery)
+        if frame_observer is not None:
+            frame = np.asarray(frame_observer())
+            if frame.dtype != np.uint8 or frame.ndim != 3 or frame.shape[-1] != 3:
+                raise ValueError("RGB frames must be uint8 arrays with shape H x W x 3")
+            records["rgb"].append(frame.copy())
+            records["instruction"].append(instruction)
 
         env.set_mocap_pos(mocap + delta)
         env.set_gripper(gripper_command)
@@ -209,9 +235,15 @@ def run_scripted_episode(
 
     arrays = {}
     for key, values in records.items():
-        dtype = np.int64 if key == "phase" else np.float32
-        if key == "recovery":
+        dtype = np.float32
+        if key == "phase":
+            dtype = np.int64
+        elif key == "recovery":
             dtype = np.bool_
+        elif key == "rgb":
+            dtype = np.uint8
+        elif key == "instruction":
+            dtype = np.str_
         arrays[key] = np.asarray(values, dtype=dtype)
     arrays["action_gripper"] = arrays["action_gripper"].reshape(-1, 1)
     arrays["phase_names"] = np.asarray(PHASE_NAMES)

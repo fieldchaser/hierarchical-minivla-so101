@@ -71,6 +71,9 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Target the descend-to-grasp boundary in DAgger round 3
 - [x] Extend on-policy aggregation through grasp and lift
 - [x] Aggregate on-policy transport and alignment failures
+- [x] Define and headless-test the frame-aligned RGB-language data contract
+- [x] Verify one real rendered RGB episode in a foreground macOS terminal
+- [x] Select final camera framing from angle/top/front_close previews
 - [ ] Add RGB observations and natural-language goals (Flat MiniVLA)
 - [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
 - [ ] Evaluate unseen layouts and instruction paraphrases
@@ -629,3 +632,73 @@ hierarchical controller with 80% success on a 30-seed held-out comparison, and
 the next milestone moves to RGB observations and language goals. Round 5 also
 provides a concrete future ablation for transport-head-only fine-tuning without
 changing the shared encoder.
+
+## Milestone 11: frame-aligned RGB and language data contract
+
+The scripted collector can optionally record a fixed-camera RGB observation
+before every expert action. Each visual row is aligned with the same timestep's
+state, action, gripper command, and phase label:
+
+```text
+rgb[t]          uint8 [H, W, 3]
+instruction[t]  natural-language string
+state[t]        robot, object, and goal state
+action[t]       Cartesian delta and gripper command
+phase[t]        reach/descend/grasp/lift/transport/release
+```
+
+Three deterministic instruction templates provide initial language variation,
+for example `Pick up the red cube and place it in the bin.` and `Move the green
+block into the container.` The saved episode repeats its single instruction at
+every timestep so loaders cannot accidentally misalign language and actions.
+
+An independent validator rejects missing arrays, temporal length mismatches,
+non-`uint8` images, invalid channel shapes, and episodes containing multiple
+instructions. A headless smoke run used a real 214-step MuJoCo expert trajectory
+with test frames and verified the contract both before and after compressed NPZ
+serialization.
+
+Real MuJoCo rendering on macOS requires a foreground CoreGraphics session. The
+Codex background shell cannot create that context, so run this one-episode check
+in a normal Terminal window from the repository root:
+
+```bash
+source .venv/bin/activate
+
+python scripts/collect_scripted_dataset.py \
+  --eth-hw3 ../../work/ethz-course-2026/hw3_imitation_learning \
+  --output-dir data/vision/smoke \
+  --episodes 1 \
+  --seed-start 1500 \
+  --colors red \
+  --record-rgb \
+  --camera angle \
+  --render-width 128 \
+  --render-height 128 \
+  --preview-path assets/rgb_smoke_preview.jpg \
+  --min-success-rate 1.0
+
+python scripts/validate_vision_episode.py \
+  data/vision/smoke/episode_0000_seed_1500_red.npz
+```
+
+The foreground run succeeded for all 214 steps. The saved episode contains
+`uint8` images with shape `214 x 128 x 128 x 3`, one aligned instruction, and a
+successful physical release; compressed size is 0.426 MB. Visual inspection of
+the six-frame contact sheet confirms that the arm, gripper, three colored cubes,
+and bin stay in view throughout the task.
+
+The camera comparison uses the same seed, layout, instruction, and 214-step
+expert trajectory. `angle` is valid but wide, and `top` shows spatial layout
+clearly while leaving the cubes relatively small. `front_close` keeps all three
+cubes and the bin visible while allocating substantially more pixels to the
+gripper-object interaction, so it is selected as the fixed Flat MiniVLA camera
+and is now the collector default.
+
+![Selected front-close RGB trajectory](assets/rgb_smoke_front_close_preview.jpg)
+
+All three real episodes pass the validator. Their compressed sizes are 0.426 MB
+(`angle`), 0.591 MB (`top`), and 0.628 MB (`front_close`). The datasets remain
+ignored by Git, while the three contact sheets are committed as small camera-
+selection evidence. The next milestone can now collect a multi-color visual
+dataset using the selected view before beginning Flat MiniVLA training.
