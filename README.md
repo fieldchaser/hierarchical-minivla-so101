@@ -4,13 +4,13 @@ A simulation-first research project for language-conditioned, multi-task robotic
 
 ## Current milestone: first RGB-language-action training path
 
-The repository now contains a 42K-parameter Flat MiniVLA that maps a rendered
+The repository now contains a 108K-parameter Flat MiniVLA that maps a rendered
 RGB frame, natural-language instruction, and robot proprioception to Cartesian
-and gripper actions. On a phase-balanced batch from one real MuJoCo trajectory,
-training reduced Cartesian action MAE from `1.160 mm` to `0.088 mm` and reached
-100% gripper accuracy. This is a deliberate batch-overfit proof, not yet a
-closed-loop visual-policy success claim; see Milestone 12 for the reproducible
-command and scope.
+and gripper actions. It was trained on 21 complete MuJoCo episodes and selected
+on nine held-out episodes covering every color and instruction template. The
+best checkpoint reaches `0.578 mm` validation Cartesian MAE and `99.06%`
+gripper accuracy. This remains an offline imitation metric, not yet a closed-
+loop visual-policy success claim; see Milestone 13 for the reproducible result.
 
 Milestone 0 began with the smallest useful symbolic contract:
 
@@ -73,7 +73,8 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Verify one real rendered RGB episode in a foreground macOS terminal
 - [x] Select final camera framing from angle/top/front_close previews
 - [x] Overfit one real RGB-language-proprioception batch end to end
-- [ ] Add RGB observations and natural-language goals (Flat MiniVLA)
+- [x] Add RGB observations and natural-language goals (Flat MiniVLA)
+- [ ] Evaluate Flat MiniVLA in closed-loop MuJoCo rollouts
 - [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
 - [ ] Evaluate unseen layouts and instruction paraphrases
 
@@ -735,14 +736,67 @@ checkpoint so a late fixed-learning-rate fluctuation cannot replace an already
 better model. The checkpoint includes both model weights and the word
 vocabulary and passes a save/load round-trip test.
 
-| Fixed-batch metric | Before training | Best checkpoint (step 925) |
+| Fixed-batch metric | Before training | Best checkpoint (step 975) |
 |---|---:|---:|
-| Cartesian action MAE | 1.160 mm | 0.088 mm |
-| Gripper accuracy | 46.88% | 100% |
+| Cartesian action MAE | 1.086 mm | 0.089 mm |
+| Gripper accuracy | 56.25% | 100% |
 
-The policy has 42,116 trainable parameters and trained on the Mac CPU. This is
+The spatial policy has 107,716 trainable parameters for this vocabulary and
+trained on the Mac CPU. This is
 an intentional batch-overfit test, not a closed-loop success result: it proves
 that real pixels, language, robot state, labels, optimization, serialization,
 and metrics agree before spending time or GPU money on a larger dataset. The
 next milestone is to collect randomized red/green/blue visual episodes and
 train the first held-out Flat MiniVLA baseline.
+
+## Milestone 13: multi-color Flat MiniVLA baseline
+
+The first formal visual dataset contains 30 randomized `front_close` MuJoCo
+episodes collected from seeds 1600-1629. The scripted expert succeeds in all
+30 attempts and saves 6,754 aligned frames (18.3 MB compressed). Red, green,
+and blue each contribute ten episodes. Every color appears with all three
+instruction templates; each color-template pair has three or four successful
+episodes. Episode length ranges from 181 to 288 steps, with a mean of 225.13.
+
+Language variants rotate only after a complete red/green/blue cycle. This
+prevents the accidental shortcut in which one sentence template identifies one
+target color. A regression test verifies the full 3 x 3 coverage schedule.
+
+The visual encoder now preserves a `4 x 4` feature grid before projection.
+Global average pooling was sufficient for the one-trajectory pipeline proof but
+would discard much of the object-location information needed under randomized
+layouts. RGB features are fused with mean word embeddings and a 10-D
+proprioceptive embedding. Object coordinates, bin coordinates, goal one-hot
+vectors, and phase labels are not policy inputs.
+
+The training script holds out one complete episode for each of the nine exact
+color-template instructions. This produces 21 training episodes (4,615 frames)
+and nine validation episodes (2,139 frames), with no frame or episode overlap
+and full instruction coverage on both sides:
+
+```bash
+python scripts/train_flat_minivla.py \
+  --data-dir data/vision/train_30 \
+  --epochs 30 \
+  --batch-size 64 \
+  --device cpu \
+  --output checkpoints/flat_minivla.pt \
+  --metrics-output results/flat_minivla_offline.json
+```
+
+Validation loss selects the checkpoint from epoch 21 rather than taking the
+last epoch.
+
+| Offline metric | Train episodes | Held-out episodes |
+|---|---:|---:|
+| Cartesian action MAE | 0.306 mm | 0.578 mm |
+| Gripper accuracy | 99.09% | 99.06% |
+
+The model has 108,036 trainable parameters for the formal vocabulary and trains
+comfortably on the Mac CPU; this stage does not require a rented GPU. The gap
+between train and validation Cartesian error measures generalization to held-
+out layouts, while the language strings themselves are seen during training.
+Unseen paraphrases therefore remain a later experiment. Most importantly,
+offline action error does not establish closed-loop task success, so the next
+milestone will execute this checkpoint in fresh MuJoCo rollouts and report
+phase progress and pick-and-place success.

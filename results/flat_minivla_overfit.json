@@ -1,9 +1,9 @@
 {
-  "num_parameters": 42116,
+  "num_parameters": 107716,
   "num_episodes": 1,
   "batch_size": 32,
   "steps": 1000,
-  "best_step": 925,
+  "best_step": 975,
   "image_shape": [
     128,
     128,
@@ -20,11 +20,11 @@
     "release": 5
   },
   "initial": {
-    "delta_mae_mm": 1.1599889257922769,
-    "gripper_accuracy": 0.46875
+    "delta_mae_mm": 1.0864363284781575,
+    "gripper_accuracy": 0.5625
   },
   "final": {
-    "delta_mae_mm": 0.08836464257910848,
+    "delta_mae_mm": 0.08890539174899459,
     "gripper_accuracy": 1.0
   },
   "checkpoint": "checkpoints/flat_minivla_overfit.pt"

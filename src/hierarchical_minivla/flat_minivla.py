@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections import defaultdict
 from pathlib import Path
 from typing import Sequence
 
@@ -76,6 +77,38 @@ def load_vision_episodes(paths: Sequence[str | Path]) -> dict[str, np.ndarray]:
     return {key: np.concatenate(values) for key, values in collected.items()}
 
 
+def split_vision_episode_paths(
+    paths: Sequence[str | Path], seed: int = 0
+) -> tuple[list[Path], list[Path]]:
+    """Hold out one whole episode for every distinct training instruction."""
+    groups: dict[str, list[Path]] = defaultdict(list)
+    for raw_path in paths:
+        path = Path(raw_path)
+        with np.load(path, allow_pickle=False) as data:
+            instructions = np.unique(np.asarray(data["instruction"]).astype(str))
+        if len(instructions) != 1:
+            raise ValueError(f"Expected one instruction in episode: {path}")
+        groups[str(instructions[0])].append(path)
+    if not groups:
+        raise ValueError("No vision episodes were provided")
+
+    rng = np.random.default_rng(seed)
+    train_paths = []
+    validation_paths = []
+    for instruction in sorted(groups):
+        group = sorted(groups[instruction])
+        if len(group) < 2:
+            raise ValueError(
+                f"Need at least two episodes for instruction: {instruction}"
+            )
+        validation_index = int(rng.integers(len(group)))
+        validation_paths.append(group[validation_index])
+        train_paths.extend(
+            path for index, path in enumerate(group) if index != validation_index
+        )
+    return sorted(train_paths), sorted(validation_paths)
+
+
 def phase_balanced_indices(phases: np.ndarray, batch_size: int) -> np.ndarray:
     """Select evenly spaced examples with near-equal coverage of present phases."""
     phase_ids = np.unique(np.asarray(phases, dtype=np.int64))
@@ -116,8 +149,10 @@ class FlatMiniVLA(nn.Module):
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
-            nn.AdaptiveAvgPool2d(1),
+            nn.AdaptiveAvgPool2d((4, 4)),
             nn.Flatten(),
+            nn.Linear(64 * 4 * 4, 64),
+            nn.ReLU(),
         )
         self.text_embedding = nn.Embedding(vocab_size, 32, padding_idx=0)
         self.proprio_encoder = nn.Sequential(nn.Linear(PROPRIO_DIM, 32), nn.ReLU())
@@ -166,7 +201,7 @@ def save_flat_minivla(
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(
-        {"version": 1, "vocabulary": vocabulary, "state_dict": policy.state_dict()},
+        {"version": 2, "vocabulary": vocabulary, "state_dict": policy.state_dict()},
         path,
     )
     return path
@@ -177,7 +212,7 @@ def load_flat_minivla(
 ) -> tuple[FlatMiniVLA, dict[str, int]]:
     """Restore a Flat MiniVLA checkpoint and its word vocabulary."""
     checkpoint = torch.load(Path(path), map_location=map_location, weights_only=True)
-    if checkpoint.get("version") != 1:
+    if checkpoint.get("version") != 2:
         raise ValueError(f"Unsupported Flat MiniVLA version: {checkpoint.get('version')}")
     state_dict = checkpoint["state_dict"]
     vocabulary = checkpoint["vocabulary"]

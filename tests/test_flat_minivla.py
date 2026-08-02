@@ -14,6 +14,7 @@ from hierarchical_minivla.flat_minivla import (
     load_flat_minivla,
     phase_balanced_indices,
     save_flat_minivla,
+    split_vision_episode_paths,
 )
 
 
@@ -65,6 +66,27 @@ class FlatMiniVLATest(unittest.TestCase):
         self.assertEqual(restored_vocabulary, vocabulary)
         for expected, actual in zip(policy.parameters(), restored.parameters()):
             torch.testing.assert_close(actual, expected)
+
+    def test_episode_split_holds_out_each_instruction_without_overlap(self) -> None:
+        with TemporaryDirectory() as directory:
+            paths = []
+            for instruction_index in range(3):
+                for episode_index in range(3):
+                    path = Path(directory) / f"episode_{instruction_index}_{episode_index}.npz"
+                    np.savez_compressed(
+                        path,
+                        instruction=np.repeat(
+                            f"instruction {instruction_index}", repeats=2
+                        ),
+                    )
+                    paths.append(path)
+            train, validation = split_vision_episode_paths(paths, seed=4)
+        self.assertEqual(len(train), 6)
+        self.assertEqual(len(validation), 3)
+        self.assertTrue(set(train).isdisjoint(validation))
+        self.assertEqual(
+            {path.name.split("_")[1] for path in validation}, {"0", "1", "2"}
+        )
 
 
 if __name__ == "__main__":
