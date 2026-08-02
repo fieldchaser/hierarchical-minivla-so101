@@ -26,6 +26,27 @@ def make_policy() -> HierarchicalMiniVLA:
 
 
 class HierarchicalMiniVLATest(unittest.TestCase):
+    def test_act_uses_requested_phase_and_returns_prediction(self) -> None:
+        policy = make_policy().eval()
+        rgb = np.zeros((32, 32, 3), dtype=np.uint8)
+        tokens = np.array([2, 3], dtype=np.int64)
+        proprio = np.zeros(13, dtype=np.float32)
+        phase = 4
+        with torch.inference_mode():
+            expected_delta, expected_gripper_logit, phase_logits = policy(
+                torch.from_numpy(rgb).unsqueeze(0),
+                torch.from_numpy(tokens).unsqueeze(0),
+                torch.from_numpy(proprio).unsqueeze(0),
+                torch.tensor([phase]),
+            )
+        delta, gripper, predicted_phase = policy.act(
+            rgb, tokens, proprio, phase=phase
+        )
+        expected_delta = expected_delta[0].clamp(-0.004, 0.004).numpy()
+        np.testing.assert_allclose(delta, expected_delta)
+        self.assertEqual(gripper > 0.0, expected_gripper_logit.item() >= 0.0)
+        self.assertEqual(predicted_phase, int(phase_logits.argmax(dim=1).item()))
+
     def test_forward_and_backward_use_phase_specific_heads(self) -> None:
         policy = make_policy()
         rgb = torch.zeros((3, 32, 32, 3), dtype=torch.uint8)

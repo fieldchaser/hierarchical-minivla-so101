@@ -114,15 +114,13 @@ class HierarchicalMiniVLA(FlatMiniVLA):
         ).unsqueeze(0)
         if token_tensor.ndim == 1:
             token_tensor = token_tensor.unsqueeze(0)
-        phase_logits, _ = self._outputs(rgb_tensor, token_tensor, proprio_tensor)
+        phase_logits, actions = self._outputs(rgb_tensor, token_tensor, proprio_tensor)
         predicted_phase = int(phase_logits.argmax(dim=1).item())
         selected_phase = predicted_phase if phase is None else phase
-        phase_tensor = torch.tensor([selected_phase], device=device)
-        delta, gripper_logit, _ = self(
-            rgb_tensor, token_tensor, proprio_tensor, phase_tensor
-        )
-        bounded_delta = delta[0].clamp(-ACTION_DELTA_LIMIT, ACTION_DELTA_LIMIT)
-        gripper = GRIPPER_OPEN if gripper_logit.item() >= 0.0 else GRIPPER_CLOSED
+        selected_action = actions[0, selected_phase]
+        delta = selected_action[:3] * self.delta_std + self.delta_mean
+        bounded_delta = delta.clamp(-ACTION_DELTA_LIMIT, ACTION_DELTA_LIMIT)
+        gripper = GRIPPER_OPEN if selected_action[3].item() >= 0.0 else GRIPPER_CLOSED
         return bounded_delta.cpu().numpy(), gripper, predicted_phase
 
 

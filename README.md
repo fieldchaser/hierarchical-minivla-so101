@@ -2,17 +2,17 @@
 
 A simulation-first research project for language-conditioned, multi-task robotic manipulation. The long-term question is whether explicit skill phases improve data efficiency and generalization over a flat vision-language-action policy.
 
-## Current milestone: held-out Hierarchical MiniVLA evaluation
+## Current milestone: Hierarchical MiniVLA closed-loop diagnosis
 
-The Flat MiniVLA baseline reaches `0.580 mm` held-out offline Cartesian MAE but
-succeeds in 0/10 unseen closed-loop layouts. The 111K-parameter Hierarchical
-MiniVLA now trains on the same 21 episodes and is evaluated on the same nine
-held-out episodes. Its skill-phase classifier reaches 90.70% accuracy. Using
-the predicted phase to route actions, the complete offline policy reaches
-`0.490 mm` Cartesian MAE and 99.06% gripper accuracy, reducing action error by
-15.4% relative to the Flat baseline. Milestone 16 reports teacher-routed and
-autonomous-routed results separately and identifies lift recognition as the
-main remaining phase error. Closed-loop evaluation is still required.
+The Hierarchical MiniVLA improves held-out offline Cartesian MAE from the Flat
+baseline's `0.580 mm` to `0.490 mm`, but the first seen-layout closed-loop run
+does not complete reach. On training seed 1609, the reach head passes within
+8.2 mm of its target and then accumulates a persistent positive-Y error until
+the observation leaves the demonstration distribution. An offline replay of
+the recorded seed-1609 trajectory still gives 96.9% phase accuracy, proving
+that checkpoint loading and in-distribution phase learning work. Milestone 17
+retains this negative result and motivates RGB recovery demonstrations rather
+than tuning the phase-vote threshold around the underlying action drift.
 
 Milestone 0 began with the smallest useful symbolic contract:
 
@@ -80,6 +80,8 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Add phase supervision and phase-conditioned Hierarchical MiniVLA heads
 - [x] Overfit one real phase-balanced Hierarchical MiniVLA batch
 - [x] Train and evaluate Hierarchical MiniVLA on complete held-out episodes
+- [x] Diagnose Hierarchical MiniVLA on a seen closed-loop layout
+- [ ] Add RGB recovery demonstrations for off-trajectory correction
 - [ ] Evaluate unseen layouts and instruction paraphrases
 
 ## Upstream attribution and licensing boundary
@@ -988,3 +990,62 @@ track predicted phase progression, prevent backward phase jumps, and report
 whether failures originate before grasp, during lift, or near release. The
 offline improvement is encouraging, but it is not counted as manipulation
 success until the policy completes fresh MuJoCo rollouts.
+
+## Milestone 17: seen-layout hierarchical closed-loop diagnosis
+
+The hierarchical closed-loop evaluator uses the same camera, workspace limits,
+proprioceptive contract, and physical success criteria as the Flat evaluator.
+Raw model phase predictions pass through a monotonic tracker: three consecutive
+votes for exactly the next phase advance the controller by one stage, while
+backward and multi-stage jumps are ignored. Cube and bin ground-truth states
+are read only after each action for scoring and an observed-physics diagnostic;
+they never choose the controller phase or action.
+
+```bash
+python scripts/evaluate_hierarchical_minivla.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --checkpoint checkpoints/hierarchical_minivla.pt \
+  --episodes 1 \
+  --seed-start 1609 \
+  --cube-pos-std 0.006 \
+  --max-steps 400 \
+  --phase-votes 3 \
+  --trace-every 25 \
+  --camera front_close \
+  --render-width 128 \
+  --render-height 128 \
+  --device cpu \
+  --output results/hierarchical_minivla_closed_loop_seen_1609.json
+```
+
+Seed 1609 belongs to the training split, so this run is an interface and
+closed-loop representation test rather than a generalization claim. It reaches
+neither grasp nor task success:
+
+| Seen-layout diagnostic | Result |
+|---|---:|
+| Success | 0/1 |
+| Closest reach-target distance | 8.17 mm |
+| Closest grasp-target distance | 69.77 mm |
+| Close command / physical lift | 0 / 0 |
+| Final controller phase | Descend |
+| Final observed physical phase | Reach |
+| Predicted/observed phase agreement | 18.25% |
+
+The sparse trace localizes the failure. At step 25 the controller is closest to
+the reach target, but the reach head still commands approximately `+1.69 mm`
+in Y. It continues past the cube; by step 150 the reach distance has grown to
+193 mm. The classifier then operates on unfamiliar images, predicting release
+for 95 frames. The tracker correctly rejects those multi-stage jumps, but it
+cannot repair the reach action. At step 171 it finally receives three descend
+votes and advances after the arm is already 215 mm from the reach target.
+
+This is not fixed by merely increasing the vote threshold: that would delay
+the descend transition while the reach head continues drifting. Lowering the
+threshold could advance earlier, but would route to descend before reliable XY
+alignment. The recorded seed-1609 expert trajectory gives 96.9% offline phase
+accuracy, with only six misclassified frames across all phases, so the dominant
+gap is closed-loop distribution shift. The next dataset will therefore add
+rendered recovery perturbations around reach, lift, and transport targets. The
+scripted expert will label corrective actions from those perturbed states before
+the hierarchical and Flat policies are compared again on equal augmented data.
