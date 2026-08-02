@@ -197,7 +197,9 @@ def evaluate(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=Path, required=True)
-    parser.add_argument("--extra-train-dir", type=Path)
+    parser.add_argument(
+        "--extra-train-dir", type=Path, action="append", default=[]
+    )
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
@@ -223,15 +225,18 @@ def main() -> None:
         paths, seed=args.seed
     )
     extra_train_paths = []
-    if args.extra_train_dir is not None:
-        extra_train_paths = sorted(
-            args.extra_train_dir.expanduser().resolve().glob("episode_*.npz")
+    for extra_train_dir in args.extra_train_dir:
+        directory_paths = sorted(
+            extra_train_dir.expanduser().resolve().glob("episode_*.npz")
         )
-        if not extra_train_paths:
+        if not directory_paths:
             parser.error("--extra-train-dir contains no episode_*.npz files")
-        overlap = set(paths) & set(extra_train_paths)
-        if overlap:
-            parser.error("--extra-train-dir overlaps the base dataset")
+        extra_train_paths.extend(directory_paths)
+    if len(set(extra_train_paths)) != len(extra_train_paths):
+        parser.error("--extra-train-dir directories contain duplicate episodes")
+    overlap = set(paths) & set(extra_train_paths)
+    if overlap:
+        parser.error("--extra-train-dir overlaps the base dataset")
     train_paths = base_train_paths + extra_train_paths
     train_arrays = load_vision_episodes(train_paths)
     validation_arrays = load_vision_episodes(validation_paths)

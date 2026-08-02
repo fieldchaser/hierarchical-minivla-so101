@@ -2,18 +2,17 @@
 
 A simulation-first research project for language-conditioned, multi-task robotic manipulation. The long-term question is whether explicit skill phases improve data efficiency and generalization over a flat vision-language-action policy.
 
-## Current milestone: recovery augmentation and its closed-loop limit
+## Current milestone: Visual DAgger fixes closed-loop reach
 
-Thirty RGB recovery trajectories add 7,212 frames, including 251 corrective
-frames around reach, lift, and transport. With the original nine validation
-episodes fixed, recovery augmentation improves Hierarchical MiniVLA phase
-accuracy from 90.70% to 96.26% and autonomous action MAE from `0.490 mm` to
-`0.347 mm`. The seen seed-1609 rollout also eliminates spurious release
-predictions and advances through reach, descend, and grasp. However, it still
-closes 188 mm from the cube because the reach action drifts beyond the local
-recovery distribution. Milestone 18 records both the offline gain and the
-remaining 0/1 physical success, motivating visual DAgger on actual policy-
-visited states rather than more random local perturbations.
+Visual DAgger Round 1 records 120 expert corrections on states visited by the
+recovery policy before expert takeover completes the trajectory. Adding this
+single 260-frame episode improves fixed held-out autonomous MAE from `0.347 mm`
+to `0.330 mm`. More importantly, the seed-1609 closed loop reaches within 2.14
+mm of the target and the observed physical phase advances to descend for the
+first time. The remaining failure is now phase transition rather than spatial
+drift: all 400 raw predictions remain reach, so the controller never selects
+the descend head. Milestone 19 separates this progress from task success and
+defines Round 2 around the newly reached reach-to-descend boundary.
 
 Milestone 0 began with the smallest useful symbolic contract:
 
@@ -83,7 +82,8 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Train and evaluate Hierarchical MiniVLA on complete held-out episodes
 - [x] Diagnose Hierarchical MiniVLA on a seen closed-loop layout
 - [x] Add RGB recovery demonstrations for off-trajectory correction
-- [ ] Aggregate policy-visited RGB corrections with visual DAgger
+- [x] Aggregate policy-visited RGB corrections with visual DAgger round 1
+- [ ] Target the visual reach-to-descend boundary in DAgger round 2
 - [ ] Evaluate unseen layouts and instruction paraphrases
 
 ## Upstream attribution and licensing boundary
@@ -1133,3 +1133,87 @@ more direct intervention: run the current RGB policy, save the observations it
 actually visits, and query the scripted expert for the correct phase and action
 at those states. This targets the demonstrated failure distribution without
 giving simulator object coordinates to the deployed policy.
+
+## Milestone 19: Visual DAgger round 1 reaches the first boundary
+
+The Visual DAgger runner executes the learned visual policy during the first
+120 reach steps while querying the scripted expert at every visited state. It
+records the learner's executed action separately from the expert action used as
+the training label. The expert then takes control and completes the episode, so
+the saved archive remains a successful, fully aligned RGB-language-action
+trajectory.
+
+```bash
+python scripts/collect_visual_dagger_dataset.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --checkpoint checkpoints/hierarchical_minivla_recovery.pt \
+  --output-dir data/vision/dagger_round1_seen1609 \
+  --episodes 1 \
+  --seed-start 1609 \
+  --cube-pos-std 0.006 \
+  --learner-reach-steps 120 \
+  --phase-votes 3 \
+  --max-steps 800 \
+  --camera front_close \
+  --render-width 128 \
+  --render-height 128 \
+  --device cpu \
+  --min-success-rate 1.0
+```
+
+The learner controls exactly 120 states before 140 expert-takeover steps finish
+the task. All learner states have expert phase `reach`, matching the physical
+failure being targeted. Learner and expert Cartesian actions differ by 6.79 mm
+on average, 9.53 mm at the 95th percentile, and as much as 9.70 mm in vector
+norm. These are high-disagreement corrections rather than duplicated scripted
+frames.
+
+The trainer accepts repeated `--extra-train-dir` arguments so recovery and
+DAgger episodes can be added without changing the original validation split:
+
+```bash
+python scripts/train_hierarchical_minivla.py \
+  --data-dir data/vision/train_30 \
+  --extra-train-dir data/vision/recovery_30_008 \
+  --extra-train-dir data/vision/dagger_round1_seen1609 \
+  --epochs 30 \
+  --batch-size 64 \
+  --device cpu \
+  --output checkpoints/hierarchical_minivla_dagger_r1.pt \
+  --metrics-output results/hierarchical_minivla_dagger_r1_offline.json
+```
+
+Validation loss selects epoch 14. The single DAgger episode increases training
+to 52 episodes and 12,087 frames while keeping the same nine validation
+episodes.
+
+| Fixed held-out metric | Recovery only | Visual DAgger R1 |
+|---|---:|---:|
+| Phase accuracy | 96.26% | **96.54%** |
+| Teacher-routed action MAE | 0.298 mm | **0.288 mm** |
+| Autonomous-routed action MAE | 0.347 mm | **0.330 mm** |
+| Reach teacher-routed MAE | 0.570 mm | **0.563 mm** |
+
+The offline change is modest, but the same closed-loop seed shows the intended
+behavioral correction:
+
+| Seen seed 1609 | Original | Recovery | DAgger R1 |
+|---|---:|---:|---:|
+| Physical success | 0/1 | 0/1 | 0/1 |
+| Closest reach-target distance | 8.17 mm | 11.06 mm | **2.14 mm** |
+| Observed final physical phase | Reach | Reach | **Descend** |
+| Controller final phase | Descend | Grasp | Reach |
+| Close command | No | Yes, far away | No |
+
+At step 23, DAgger R1 enters the 4 mm physical reach tolerance and the observed
+phase advances to descend. The reach action no longer diverges; after a small
+overshoot it converges to micrometer-scale commands near a stable point. This
+is the first learned visual checkpoint to complete a physical phase boundary.
+
+Task success remains 0/1 because the phase classifier predicts reach on all 400
+frames. The monotonic controller consequently never selects the descend action
+head even though the arm physically reached the boundary. Round 1 therefore
+fixed its targeted spatial-control error and exposed the next bottleneck rather
+than completing the task. Round 2 will roll out this new checkpoint and record
+the on-policy reach-to-descend boundary followed by expert takeover, supplying
+phase labels on the states that did not exist in the Round-1 failure trajectory.
