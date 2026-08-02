@@ -1,0 +1,468 @@
+{
+  "seed_start": 1700,
+  "num_successes": 0,
+  "num_episodes": 10,
+  "success_rate": 0.0,
+  "camera": "front_close",
+  "device": "cpu",
+  "num_closed_command_episodes": 5,
+  "num_open_after_close_episodes": 2,
+  "num_lifted_episodes": 0,
+  "num_bin_aligned_episodes": 0,
+  "mean_min_grasp_distance_m": 0.11502450479780672,
+  "mean_min_reach_distance_m": 0.09308457223141745,
+  "furthest_milestone_counts": {
+    "initial": 4,
+    "near_reach": 1,
+    "close_command": 5
+  },
+  "mean_final_phase": 0.0,
+  "final_phase_counts": {
+    "reach": 10,
+    "descend": 0,
+    "grasp": 0,
+    "lift": 0,
+    "transport": 0,
+    "release": 0
+  },
+  "reached_phase_counts": {
+    "reach": 10,
+    "descend": 0,
+    "grasp": 0,
+    "lift": 0,
+    "transport": 0,
+    "release": 0
+  },
+  "results": [
+    {
+      "seed": 1700,
+      "goal_cube": "red",
+      "instruction": "Pick up the red cube and place it in the bin.",
+      "success": false,
+      "steps": 400,
+      "final_phase": "reach",
+      "phase_transitions": [
+        "reach"
+      ],
+      "furthest_milestone": "initial",
+      "min_reach_distance_m": 0.030809587012643833,
+      "min_grasp_distance_m": 0.06619645030939919,
+      "closed_command_ever": false,
+      "first_close_step": null,
+      "first_open_after_close_step": null,
+      "first_lift_step": null,
+      "first_bin_aligned_step": null,
+      "final_gripper_command": 1.0,
+      "final_gripper_angle": 0.9998927655185753,
+      "max_cube_height_m": 0.01999994719755288,
+      "min_cube_bin_xy_distance_m": 0.09789256589077952,
+      "final_cube_xyz": [
+        -0.201908,
+        0.55246,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.199681,
+        0.454593,
+        0.021
+      ],
+      "final_mocap_xyz": [
+        -0.201837,
+        0.530582,
+        0.171144
+      ],
+      "final_ee_xyz": [
+        -0.210813,
+        0.528537,
+        0.149114
+      ]
+    },
+    {
+      "seed": 1701,
+      "goal_cube": "green",
+      "instruction": "Pick up the green cube and place it in the bin.",
+      "success": false,
+      "steps": 400,
+      "final_phase": "reach",
+      "phase_transitions": [
+        "reach"
+      ],
+      "furthest_milestone": "near_reach",
+      "min_reach_distance_m": 0.01200538883812036,
+      "min_grasp_distance_m": 0.057737455511039495,
+      "closed_command_ever": false,
+      "first_close_step": null,
+      "first_open_after_close_step": null,
+      "first_lift_step": null,
+      "first_bin_aligned_step": null,
+      "final_gripper_command": 1.0,
+      "final_gripper_angle": 0.9998929052544815,
+      "max_cube_height_m": 0.01999994719755288,
+      "min_cube_bin_xy_distance_m": 0.1965798357176963,
+      "final_cube_xyz": [
+        -0.195851,
+        0.540253,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.192638,
+        0.343699,
+        0.021
+      ],
+      "final_mocap_xyz": [
+        -0.199076,
+        0.591088,
+        0.166178
+      ],
+      "final_ee_xyz": [
+        -0.210376,
+        0.585756,
+        0.144499
+      ]
+    },
+    {
+      "seed": 1702,
+      "goal_cube": "blue",
+      "instruction": "Pick up the blue cube and place it in the bin.",
+      "success": false,
+      "steps": 400,
+      "final_phase": "reach",
+      "phase_transitions": [
+        "reach"
+      ],
+      "furthest_milestone": "close_command",
+      "min_reach_distance_m": 0.16138495432354152,
+      "min_grasp_distance_m": 0.16473572733969025,
+      "closed_command_ever": true,
+      "first_close_step": 57,
+      "first_open_after_close_step": 138,
+      "first_lift_step": null,
+      "first_bin_aligned_step": null,
+      "final_gripper_command": 1.0,
+      "final_gripper_angle": 0.999893752990015,
+      "max_cube_height_m": 0.01999994719755289,
+      "min_cube_bin_xy_distance_m": 0.3560822271547289,
+      "final_cube_xyz": [
+        -0.199777,
+        0.34449,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.187976,
+        0.700377,
+        0.021
+      ],
+      "final_mocap_xyz": [
+        -0.195722,
+        0.586423,
+        0.158841
+      ],
+      "final_ee_xyz": [
+        -0.206681,
+        0.581528,
+        0.139837
+      ]
+    },
+    {
+      "seed": 1703,
+      "goal_cube": "red",
+      "instruction": "Move the red block into the container.",
+      "success": false,
+      "steps": 400,
+      "final_phase": "reach",
+      "phase_transitions": [
+        "reach"
+      ],
+      "furthest_milestone": "initial",
+      "min_reach_distance_m": 0.1605454700921531,
+      "min_grasp_distance_m": 0.18467405975558904,
+      "closed_command_ever": false,
+      "first_close_step": null,
+      "first_open_after_close_step": null,
+      "first_lift_step": null,
+      "first_bin_aligned_step": null,
+      "final_gripper_command": 1.0,
+      "final_gripper_angle": 0.9998921372418906,
+      "max_cube_height_m": 0.01999994719755288,
+      "min_cube_bin_xy_distance_m": 0.24715366245143644,
+      "final_cube_xyz": [
+        -0.188985,
+        0.695042,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.203226,
+        0.448299,
+        0.021
+      ],
+      "final_mocap_xyz": [
+        -0.208957,
+        0.529679,
+        0.177879
+      ],
+      "final_ee_xyz": [
+        -0.216542,
+        0.527796,
+        0.153237
+      ]
+    },
+    {
+      "seed": 1704,
+      "goal_cube": "green",
+      "instruction": "Move the green block into the container.",
+      "success": false,
+      "steps": 400,
+      "final_phase": "reach",
+      "phase_transitions": [
+        "reach"
+      ],
+      "furthest_milestone": "initial",
+      "min_reach_distance_m": 0.15575440245716946,
+      "min_grasp_distance_m": 0.16226982963114422,
+      "closed_command_ever": false,
+      "first_close_step": null,
+      "first_open_after_close_step": null,
+      "first_lift_step": null,
+      "first_bin_aligned_step": null,
+      "final_gripper_command": 1.0,
+      "final_gripper_angle": 0.9998932292297659,
+      "max_cube_height_m": 0.01999994719755288,
+      "min_cube_bin_xy_distance_m": 0.10731641681594692,
+      "final_cube_xyz": [
+        -0.202819,
+        0.344252,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.196011,
+        0.451352,
+        0.021
+      ],
+      "final_mocap_xyz": [
+        -0.199471,
+        0.521674,
+        0.167595
+      ],
+      "final_ee_xyz": [
+        -0.208492,
+        0.520021,
+        0.146954
+      ]
+    },
+    {
+      "seed": 1705,
+      "goal_cube": "blue",
+      "instruction": "Move the blue block into the container.",
+      "success": false,
+      "steps": 400,
+      "final_phase": "reach",
+      "phase_transitions": [
+        "reach"
+      ],
+      "furthest_milestone": "close_command",
+      "min_reach_distance_m": 0.07135892642374306,
+      "min_grasp_distance_m": 0.07704955944305594,
+      "closed_command_ever": true,
+      "first_close_step": 157,
+      "first_open_after_close_step": null,
+      "first_lift_step": null,
+      "first_bin_aligned_step": null,
+      "final_gripper_command": -0.174,
+      "final_gripper_angle": -0.17400011641187424,
+      "max_cube_height_m": 0.01999994719755288,
+      "min_cube_bin_xy_distance_m": 0.08400531502544682,
+      "final_cube_xyz": [
+        -0.204917,
+        0.439285,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.197908,
+        0.355573,
+        0.021
+      ],
+      "final_mocap_xyz": [
+        -0.10607,
+        0.603757,
+        0.146011
+      ],
+      "final_ee_xyz": [
+        -0.150941,
+        0.588596,
+        0.118907
+      ]
+    },
+    {
+      "seed": 1706,
+      "goal_cube": "red",
+      "instruction": "Grasp the red object and put it in the box.",
+      "success": false,
+      "steps": 400,
+      "final_phase": "reach",
+      "phase_transitions": [
+        "reach"
+      ],
+      "furthest_milestone": "close_command",
+      "min_reach_distance_m": 0.08421075613231252,
+      "min_grasp_distance_m": 0.13326097798213646,
+      "closed_command_ever": true,
+      "first_close_step": 146,
+      "first_open_after_close_step": 204,
+      "first_lift_step": null,
+      "first_bin_aligned_step": null,
+      "final_gripper_command": -0.174,
+      "final_gripper_angle": -0.1740005252729954,
+      "max_cube_height_m": 0.0199999471975529,
+      "min_cube_bin_xy_distance_m": 0.24100277309102064,
+      "final_cube_xyz": [
+        -0.205254,
+        0.692511,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.202433,
+        0.451524,
+        0.021
+      ],
+      "final_mocap_xyz": [
+        -0.11746,
+        0.769151,
+        0.195137
+      ],
+      "final_ee_xyz": [
+        -0.188623,
+        0.706409,
+        0.141832
+      ]
+    },
+    {
+      "seed": 1707,
+      "goal_cube": "green",
+      "instruction": "Grasp the green object and put it in the box.",
+      "success": false,
+      "steps": 400,
+      "final_phase": "reach",
+      "phase_transitions": [
+        "reach"
+      ],
+      "furthest_milestone": "close_command",
+      "min_reach_distance_m": 0.055138722221263745,
+      "min_grasp_distance_m": 0.06267513973393493,
+      "closed_command_ever": true,
+      "first_close_step": 194,
+      "first_open_after_close_step": null,
+      "first_lift_step": null,
+      "first_bin_aligned_step": null,
+      "final_gripper_command": -0.174,
+      "final_gripper_angle": -0.1740005525586834,
+      "max_cube_height_m": 0.01999994719755288,
+      "min_cube_bin_xy_distance_m": 0.14449944259045028,
+      "final_cube_xyz": [
+        -0.204126,
+        0.548251,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.195997,
+        0.692521,
+        0.021
+      ],
+      "final_mocap_xyz": [
+        -0.137984,
+        0.8,
+        0.21801
+      ],
+      "final_ee_xyz": [
+        -0.207547,
+        0.726876,
+        0.155325
+      ]
+    },
+    {
+      "seed": 1708,
+      "goal_cube": "blue",
+      "instruction": "Grasp the blue object and put it in the box.",
+      "success": false,
+      "steps": 400,
+      "final_phase": "reach",
+      "phase_transitions": [
+        "reach"
+      ],
+      "furthest_milestone": "close_command",
+      "min_reach_distance_m": 0.15210035816227596,
+      "min_grasp_distance_m": 0.17595384327027963,
+      "closed_command_ever": true,
+      "first_close_step": 70,
+      "first_open_after_close_step": null,
+      "first_lift_step": null,
+      "first_bin_aligned_step": null,
+      "final_gripper_command": -0.174,
+      "final_gripper_angle": 0.3544784562316223,
+      "max_cube_height_m": 0.019999947197552895,
+      "min_cube_bin_xy_distance_m": 0.25106303561569415,
+      "final_cube_xyz": [
+        -0.199527,
+        0.697497,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.193655,
+        0.446502,
+        0.021
+      ],
+      "final_mocap_xyz": [
+        -0.17569,
+        0.547586,
+        0.168342
+      ],
+      "final_ee_xyz": [
+        -0.19058,
+        0.544007,
+        0.144623
+      ]
+    },
+    {
+      "seed": 1709,
+      "goal_cube": "red",
+      "instruction": "Pick up the red cube and place it in the bin.",
+      "success": false,
+      "steps": 400,
+      "final_phase": "reach",
+      "phase_transitions": [
+        "reach"
+      ],
+      "furthest_milestone": "initial",
+      "min_reach_distance_m": 0.047537156650950804,
+      "min_grasp_distance_m": 0.06569200500179827,
+      "closed_command_ever": false,
+      "first_close_step": null,
+      "first_open_after_close_step": null,
+      "first_lift_step": null,
+      "first_bin_aligned_step": null,
+      "final_gripper_command": 1.0,
+      "final_gripper_angle": 0.9998912935412225,
+      "max_cube_height_m": 0.01999994719755288,
+      "min_cube_bin_xy_distance_m": 0.09865747086457344,
+      "final_cube_xyz": [
+        -0.198154,
+        0.45273,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.203665,
+        0.551233,
+        0.021
+      ],
+      "final_mocap_xyz": [
+        -0.197856,
+        0.627928,
+        0.176979
+      ],
+      "final_ee_xyz": [
+        -0.213362,
+        0.618497,
+        0.149241
+      ]
+    }
+  ]
+}

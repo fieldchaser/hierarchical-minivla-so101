@@ -2,15 +2,17 @@
 
 A simulation-first research project for language-conditioned, multi-task robotic manipulation. The long-term question is whether explicit skill phases improve data efficiency and generalization over a flat vision-language-action policy.
 
-## Current milestone: first RGB-language-action training path
+## Current milestone: diagnosed Flat MiniVLA closed-loop baseline
 
-The repository now contains a 108K-parameter Flat MiniVLA that maps a rendered
-RGB frame, natural-language instruction, and robot proprioception to Cartesian
-and gripper actions. It was trained on 21 complete MuJoCo episodes and selected
-on nine held-out episodes covering every color and instruction template. The
-best checkpoint reaches `0.578 mm` validation Cartesian MAE and `99.06%`
-gripper accuracy. This remains an offline imitation metric, not yet a closed-
-loop visual-policy success claim; see Milestone 13 for the reproducible result.
+The repository contains a 108K-parameter Flat MiniVLA that maps a rendered RGB
+frame, natural-language instruction, and robot proprioception to Cartesian and
+gripper actions. Its original held-out offline result reaches `0.578 mm`
+Cartesian MAE and `99.06%` gripper accuracy, but formal closed-loop evaluation
+on ten unseen layouts succeeds in 0/10 episodes. A transition-focused variant
+nearly completes a seen training layout, including lift and bin alignment, but
+does not lift any target on unseen layouts. Milestone 14 documents why offline
+imitation metrics overstate control performance and motivates the next
+Hierarchical MiniVLA baseline.
 
 Milestone 0 began with the smallest useful symbolic contract:
 
@@ -74,7 +76,7 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Select final camera framing from angle/top/front_close previews
 - [x] Overfit one real RGB-language-proprioception batch end to end
 - [x] Add RGB observations and natural-language goals (Flat MiniVLA)
-- [ ] Evaluate Flat MiniVLA in closed-loop MuJoCo rollouts
+- [x] Evaluate and diagnose Flat MiniVLA in closed-loop MuJoCo rollouts
 - [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
 - [ ] Evaluate unseen layouts and instruction paraphrases
 
@@ -711,22 +713,23 @@ real rendered episode:
 ```text
 128 x 128 RGB frame  -> small CNN ---------+
 natural-language instruction -> word mean --+-> action head -> delta xyz
-10-D robot proprioception -> state MLP -----+               -> gripper logit
+13-D robot proprioception -> state MLP -----+               -> gripper logit
 ```
 
-The 10-D proprioceptive vector contains end-effector position, six arm joints,
-and the gripper state. Although the episode archive still contains simulator
-object and bin coordinates for evaluation, the Flat MiniVLA loader deliberately
-does not expose them to the model. Phase labels are used only to choose a
-balanced diagnostic batch; phase is not a policy input.
+The 13-D proprioceptive vector contains physical end-effector position, current
+command setpoint, six arm joints, and gripper state. Although the episode
+archive still contains simulator object and bin coordinates for evaluation,
+the Flat MiniVLA loader deliberately does not expose them to the model. Phase
+labels are used only to choose a balanced diagnostic batch; phase is not a
+policy input.
 
 Run the proof on the real `front_close` smoke episode:
 
 ```bash
 python scripts/overfit_flat_minivla_batch.py \
   --data-dir data/vision/smoke_front_close \
-  --output checkpoints/flat_minivla_overfit.pt \
-  --metrics-output results/flat_minivla_overfit.json \
+  --output checkpoints/flat_minivla_mocap_overfit.pt \
+  --metrics-output results/flat_minivla_mocap_overfit.json \
   --steps 1000
 ```
 
@@ -738,10 +741,10 @@ vocabulary and passes a save/load round-trip test.
 
 | Fixed-batch metric | Before training | Best checkpoint (step 975) |
 |---|---:|---:|
-| Cartesian action MAE | 1.086 mm | 0.089 mm |
-| Gripper accuracy | 56.25% | 100% |
+| Cartesian action MAE | 1.129 mm | 0.086 mm |
+| Gripper accuracy | 53.12% | 100% |
 
-The spatial policy has 107,716 trainable parameters for this vocabulary and
+The spatial policy has 107,812 trainable parameters for this vocabulary and
 trained on the Mac CPU. This is
 an intentional batch-overfit test, not a closed-loop success result: it proves
 that real pixels, language, robot state, labels, optimization, serialization,
@@ -765,7 +768,7 @@ target color. A regression test verifies the full 3 x 3 coverage schedule.
 The visual encoder now preserves a `4 x 4` feature grid before projection.
 Global average pooling was sufficient for the one-trajectory pipeline proof but
 would discard much of the object-location information needed under randomized
-layouts. RGB features are fused with mean word embeddings and a 10-D
+layouts. RGB features are fused with mean word embeddings and a 13-D
 proprioceptive embedding. Object coordinates, bin coordinates, goal one-hot
 vectors, and phase labels are not policy inputs.
 
@@ -780,19 +783,19 @@ python scripts/train_flat_minivla.py \
   --epochs 30 \
   --batch-size 64 \
   --device cpu \
-  --output checkpoints/flat_minivla.pt \
-  --metrics-output results/flat_minivla_offline.json
+  --output checkpoints/flat_minivla_mocap.pt \
+  --metrics-output results/flat_minivla_mocap_offline.json
 ```
 
-Validation loss selects the checkpoint from epoch 21 rather than taking the
+Validation loss selects the checkpoint from epoch 20 rather than taking the
 last epoch.
 
 | Offline metric | Train episodes | Held-out episodes |
 |---|---:|---:|
-| Cartesian action MAE | 0.306 mm | 0.578 mm |
-| Gripper accuracy | 99.09% | 99.06% |
+| Cartesian action MAE | 0.336 mm | 0.580 mm |
+| Gripper accuracy | 99.09% | 99.11% |
 
-The model has 108,036 trainable parameters for the formal vocabulary and trains
+The model has 108,132 trainable parameters for the formal vocabulary and trains
 comfortably on the Mac CPU; this stage does not require a rented GPU. The gap
 between train and validation Cartesian error measures generalization to held-
 out layouts, while the language strings themselves are seen during training.
@@ -800,3 +803,81 @@ Unseen paraphrases therefore remain a later experiment. Most importantly,
 offline action error does not establish closed-loop task success, so the next
 milestone will execute this checkpoint in fresh MuJoCo rollouts and report
 phase progress and pick-and-place success.
+
+## Milestone 14: Flat MiniVLA closed-loop diagnosis
+
+The closed-loop evaluator renders a fresh `front_close` frame before every
+action, combines it with the instruction and robot proprioception, clips the
+predicted Cartesian delta to 4 mm per axis, and executes it without scripted-
+expert takeover. Simulator object and bin states are used only after an action
+to score physical progress and success; they are never policy inputs.
+
+The first rollout exposed a state-contract mismatch. Expert Cartesian labels
+are deltas from the current mocap command target, while the initial 10-D policy
+observed only the lagging physical end-effector pose. Across the visual dataset,
+the command target and physical end effector differ by 19.9 mm on average and
+38.7 mm at the 95th percentile. The corrected 13-D proprioceptive vector adds
+the current command setpoint alongside physical end-effector position, six
+joints, and gripper state. A command setpoint is available to a real controller
+and is not privileged scene geometry.
+
+Adding the setpoint preserves the held-out offline result (`0.580 mm` Cartesian
+MAE and `99.11%` gripper accuracy) but does not by itself solve closed-loop
+control. More importantly, the scripted data contains memoryless label
+conflicts: after reaching each subgoal it records repeated zero-delta settling
+frames immediately before a nearly identical observation receives the next
+phase's movement command. A flat feed-forward policy tends to average these
+labels and stall at a phase boundary.
+
+The transition-focused variant removes 1,182 conflicting training waits. It
+keeps movement frames, grasp frames while the physical gripper is still
+closing, and all release frames. The model architecture and 21/9 episode split
+remain unchanged. Its complete held-out trajectory metrics are `0.732 mm`
+Cartesian MAE and `97.52%` gripper accuracy; on moving frames, MAE is `0.755 mm`
+and the Y-axis error is `1.347 mm`. Filtering reduces training moving Y error
+from `0.619 mm` to `0.476 mm`, but does not improve unseen-layout Y error.
+
+```bash
+python scripts/train_flat_minivla.py \
+  --data-dir data/vision/train_30 \
+  --epochs 30 \
+  --batch-size 64 \
+  --device cpu \
+  --transition-focused \
+  --output checkpoints/flat_minivla_transition.pt \
+  --metrics-output results/flat_minivla_transition_offline.json
+```
+
+Closed-loop ablations separate state definition, boundary ambiguity, and layout
+generalization:
+
+| Policy and rollout | Close command | Lifted | Bin aligned | Success |
+|---|---:|---:|---:|---:|
+| Initial 10-D flat, unseen seed 1700 | 0/1 | 0/1 | 0/1 | 0/1 |
+| 13-D setpoint flat, unseen seed 1700 | 0/1 | 0/1 | 0/1 | 0/1 |
+| 13-D setpoint flat, seen seed 1609 | 0/1 | 0/1 | 0/1 | 0/1 |
+| Transition-focused, seen seed 1609 | 1/1 | 1/1 | 1/1 | 0/1 |
+| Transition-focused, unseen seeds 1700-1709 | 5/10 | 0/10 | 0/10 | 0/10 |
+
+On the seen seed, the transition-focused policy raises the cube to 9.7 cm and
+aligns it within 1.9 mm of the bin center before drifting away without a
+successful release. This demonstrates that the flat network can represent most
+of the behavior on a memorized layout. The formal unseen-layout run is much
+weaker: four episodes remain at the initial milestone, one approaches the reach
+target, and five issue a close command, often far from the cube. Two reopen
+after closing, but none lifts a cube or reaches bin alignment. Overall success
+is 0/10.
+
+All three unseen instructions beginning with `Grasp` issue a close command,
+while only one of four red-target episodes does. With only 30 demonstrations,
+this suggests residual language/layout shortcuts rather than reliable visual
+stage recognition. A close command is therefore reported separately from a
+physical grasp or lift.
+
+The negative result is retained rather than hidden. It establishes three useful
+lessons: whole-episode validation is necessary but insufficient; zero-action
+settling frames can make offline MAE misleading; and a memoryless shared action
+head has difficulty representing phase transitions under visual distribution
+shift. The next milestone introduces explicit skill-phase supervision and
+phase-conditioned action heads in a Hierarchical MiniVLA, using this Flat
+MiniVLA as the reproducible baseline.

@@ -1,0 +1,56 @@
+{
+  "seed_start": 1700,
+  "num_successes": 0,
+  "num_episodes": 1,
+  "success_rate": 0.0,
+  "camera": "front_close",
+  "device": "cpu",
+  "num_closed_command_episodes": 0,
+  "num_lifted_episodes": 0,
+  "num_bin_aligned_episodes": 0,
+  "mean_min_grasp_distance_m": 0.06543286245815855,
+  "mean_final_phase": 0.0,
+  "final_phase_counts": {
+    "reach": 1,
+    "descend": 0,
+    "grasp": 0,
+    "lift": 0,
+    "transport": 0,
+    "release": 0
+  },
+  "reached_phase_counts": {
+    "reach": 1,
+    "descend": 0,
+    "grasp": 0,
+    "lift": 0,
+    "transport": 0,
+    "release": 0
+  },
+  "results": [
+    {
+      "seed": 1700,
+      "goal_cube": "red",
+      "instruction": "Pick up the red cube and place it in the bin.",
+      "success": false,
+      "steps": 400,
+      "final_phase": "reach",
+      "phase_transitions": [
+        "reach"
+      ],
+      "min_grasp_distance_m": 0.06543286245815855,
+      "closed_command_ever": false,
+      "max_cube_height_m": 0.01999994719755288,
+      "min_cube_bin_xy_distance_m": 0.09789256589077952,
+      "final_cube_xyz": [
+        -0.201908,
+        0.55246,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.199681,
+        0.454593,
+        0.021
+      ]
+    }
+  ]
+}

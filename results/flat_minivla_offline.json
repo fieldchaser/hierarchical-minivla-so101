@@ -295,5 +295,5 @@
     "Move the green block into the container.": 396,
     "Move the blue block into the container.": 491
   },
-  "checkpoint": "/Users/yintianyue/Documents/Codex/2026-08-02/referenced-chatgpt-conversation-this-is-untrusted/outputs/hierarchical-minivla-so101/checkpoints/flat_minivla.pt"
+  "checkpoint": "checkpoints/flat_minivla.pt"
 }

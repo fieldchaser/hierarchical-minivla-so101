@@ -13,8 +13,10 @@ from hierarchical_minivla.flat_minivla import (
     encode_instructions,
     load_flat_minivla,
     phase_balanced_indices,
+    proprio_from_observation,
     save_flat_minivla,
     split_vision_episode_paths,
+    transition_focused_mask,
 )
 
 
@@ -35,14 +37,14 @@ class FlatMiniVLATest(unittest.TestCase):
     def test_policy_forward_and_backward(self) -> None:
         policy = FlatMiniVLA(
             vocab_size=8,
-            proprio_mean=np.zeros(10),
-            proprio_std=np.ones(10),
+            proprio_mean=np.zeros(13),
+            proprio_std=np.ones(13),
             delta_mean=np.zeros(3),
             delta_std=np.ones(3),
         )
         rgb = torch.zeros((2, 32, 32, 3), dtype=torch.uint8)
         tokens = torch.tensor([[2, 3, 0], [2, 4, 5]])
-        proprio = torch.zeros((2, 10))
+        proprio = torch.zeros((2, 13))
         delta = torch.zeros((2, 3))
         gripper = torch.tensor([1.0, 0.0])
         loss, _, _ = policy.loss(rgb, tokens, proprio, delta, gripper)
@@ -50,11 +52,49 @@ class FlatMiniVLATest(unittest.TestCase):
         self.assertEqual(policy(rgb, tokens, proprio)[0].shape, (2, 3))
         self.assertTrue(any(parameter.grad is not None for parameter in policy.parameters()))
 
+    def test_proprioception_excludes_scene_truth(self) -> None:
+        observation = {
+            "ee_pos": np.array([1.0, 2.0, 3.0]),
+            "joints": np.arange(6.0),
+            "gripper": np.array([0.5]),
+            "cubes_xyz": np.full(9, 99.0),
+            "goal_pos": np.full(3, 99.0),
+        }
+        command_xyz = np.array([7.0, 8.0, 9.0])
+        proprio = proprio_from_observation(observation, command_xyz)
+        np.testing.assert_array_equal(
+            proprio,
+            np.concatenate(
+                [observation["ee_pos"], command_xyz, np.arange(6.0), [0.5]]
+            ),
+        )
+
+    def test_act_clips_delta_and_decodes_gripper(self) -> None:
+        policy = FlatMiniVLA(
+            vocab_size=4,
+            proprio_mean=np.zeros(13),
+            proprio_std=np.ones(13),
+            delta_mean=np.zeros(3),
+            delta_std=np.ones(3),
+        )
+        for parameter in policy.parameters():
+            parameter.data.zero_()
+        policy.action_head[-1].bias.data.copy_(
+            torch.tensor([10.0, -10.0, 0.0, -10.0])
+        )
+        delta, gripper = policy.act(
+            np.zeros((32, 32, 3), dtype=np.uint8),
+            np.array([2, 3]),
+            np.zeros(13, dtype=np.float32),
+        )
+        np.testing.assert_allclose(delta, [0.004, -0.004, 0.0])
+        self.assertEqual(gripper, -0.174)
+
     def test_checkpoint_round_trip(self) -> None:
         policy = FlatMiniVLA(
             vocab_size=4,
-            proprio_mean=np.zeros(10),
-            proprio_std=np.ones(10),
+            proprio_mean=np.zeros(13),
+            proprio_std=np.ones(13),
             delta_mean=np.zeros(3),
             delta_std=np.ones(3),
         )
@@ -86,6 +126,27 @@ class FlatMiniVLATest(unittest.TestCase):
         self.assertTrue(set(train).isdisjoint(validation))
         self.assertEqual(
             {path.name.split("_")[1] for path in validation}, {"0", "1", "2"}
+        )
+
+    def test_transition_filter_removes_ambiguous_waits(self) -> None:
+        proprio = np.zeros((5, 13), dtype=np.float32)
+        proprio[:, -1] = [1.0, 1.0, 0.8, 0.32, 1.0]
+        arrays = {
+            "phase": np.array([0, 0, 2, 2, 5]),
+            "delta": np.array(
+                [
+                    [0.0, 0.0, 0.0],
+                    [0.001, 0.0, 0.0],
+                    [0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0],
+                ]
+            ),
+            "proprio": proprio,
+        }
+        np.testing.assert_array_equal(
+            transition_focused_mask(arrays),
+            [False, True, True, False, True],
         )
 
 

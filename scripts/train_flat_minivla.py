@@ -19,6 +19,7 @@ from hierarchical_minivla.flat_minivla import (
     load_vision_episodes,
     save_flat_minivla,
     split_vision_episode_paths,
+    transition_focused_mask,
 )
 from hierarchical_minivla.scripted_expert import PHASE_NAMES
 
@@ -60,6 +61,8 @@ def evaluate(
     total_loss = 0.0
     total_delta_error = 0.0
     total_gripper_correct = 0
+    moving_delta_error = torch.zeros(3, dtype=torch.float64)
+    moving_examples = 0
     total_examples = 0
     for batch in loader:
         rgb, tokens, proprio, delta, gripper_open = move_batch(batch, device)
@@ -74,15 +77,30 @@ def evaluate(
         batch_size = len(rgb)
         total_loss += loss.item() * batch_size
         total_delta_error += (predicted_delta - delta).abs().sum().item()
+        moving = torch.linalg.vector_norm(delta, dim=1) > 0.0005
+        if moving.any():
+            moving_delta_error += (
+                (predicted_delta[moving] - delta[moving])
+                .abs()
+                .sum(dim=0)
+                .double()
+                .cpu()
+            )
+            moving_examples += int(moving.sum().item())
         total_gripper_correct += int(
             ((gripper_logit >= 0.0) == (gripper_open >= 0.5)).sum().item()
         )
         total_examples += batch_size
-    return {
+    result = {
         "loss": total_loss / total_examples,
         "delta_mae_mm": total_delta_error / (total_examples * 3) * 1000.0,
         "gripper_accuracy": total_gripper_correct / total_examples,
     }
+    if moving_examples:
+        moving_axis_mae = moving_delta_error / moving_examples * 1000.0
+        result["moving_delta_mae_mm"] = float(moving_axis_mae.mean().item())
+        result["moving_axis_mae_mm"] = moving_axis_mae.tolist()
+    return result
 
 
 def phase_counts(phases: np.ndarray) -> dict[str, int]:
@@ -98,6 +116,7 @@ def main() -> None:
     parser.add_argument("--learning-rate", type=float, default=1e-3)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--transition-focused", action="store_true")
     parser.add_argument(
         "--output", type=Path, default=Path("checkpoints/flat_minivla.pt")
     )
@@ -115,11 +134,25 @@ def main() -> None:
 
     paths = sorted(args.data_dir.expanduser().resolve().glob("episode_*.npz"))
     train_paths, validation_paths = split_vision_episode_paths(paths, seed=args.seed)
-    train_arrays = load_vision_episodes(train_paths)
-    validation_arrays = load_vision_episodes(validation_paths)
+    full_train_arrays = load_vision_episodes(train_paths)
+    full_validation_arrays = load_vision_episodes(validation_paths)
+    train_arrays = full_train_arrays
+    validation_arrays = full_validation_arrays
+    if args.transition_focused:
+        train_mask = transition_focused_mask(full_train_arrays)
+        validation_mask = transition_focused_mask(full_validation_arrays)
+        train_arrays = {
+            key: values[train_mask] for key, values in full_train_arrays.items()
+        }
+        validation_arrays = {
+            key: values[validation_mask]
+            for key, values in full_validation_arrays.items()
+        }
     vocabulary = build_vocabulary(train_arrays["instruction"].tolist())
     train_dataset = make_dataset(train_arrays, vocabulary)
     validation_dataset = make_dataset(validation_arrays, vocabulary)
+    full_train_dataset = make_dataset(full_train_arrays, vocabulary)
+    full_validation_dataset = make_dataset(full_validation_arrays, vocabulary)
 
     generator = torch.Generator().manual_seed(args.seed)
     train_loader = DataLoader(
@@ -130,6 +163,10 @@ def main() -> None:
     )
     train_eval_loader = DataLoader(train_dataset, batch_size=args.batch_size)
     validation_loader = DataLoader(validation_dataset, batch_size=args.batch_size)
+    full_train_loader = DataLoader(full_train_dataset, batch_size=args.batch_size)
+    full_validation_loader = DataLoader(
+        full_validation_dataset, batch_size=args.batch_size
+    )
 
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -178,9 +215,9 @@ def main() -> None:
     policy.load_state_dict(best_state)
     train_metrics = evaluate(policy, train_eval_loader, device)
     validation_metrics = evaluate(policy, validation_loader, device)
-    checkpoint_path = save_flat_minivla(
-        policy, vocabulary, args.output.expanduser().resolve()
-    )
+    full_train_metrics = evaluate(policy, full_train_loader, device)
+    full_validation_metrics = evaluate(policy, full_validation_loader, device)
+    save_flat_minivla(policy, vocabulary, args.output.expanduser().resolve())
     result = {
         "device": str(device),
         "num_parameters": sum(parameter.numel() for parameter in policy.parameters()),
@@ -189,6 +226,8 @@ def main() -> None:
         "num_validation_episodes": len(validation_paths),
         "num_train_frames": len(train_dataset),
         "num_validation_frames": len(validation_dataset),
+        "num_full_train_frames": len(full_train_dataset),
+        "num_full_validation_frames": len(full_validation_dataset),
         "num_unique_train_instructions": len(set(train_arrays["instruction"])),
         "num_unique_validation_instructions": len(
             set(validation_arrays["instruction"])
@@ -199,8 +238,11 @@ def main() -> None:
         "best_epoch": best_epoch,
         "batch_size": args.batch_size,
         "learning_rate": args.learning_rate,
+        "transition_focused": args.transition_focused,
         "train": train_metrics,
         "validation": validation_metrics,
+        "full_train": full_train_metrics,
+        "full_validation": full_validation_metrics,
         "history": history,
         "train_episodes": [path.name for path in train_paths],
         "validation_episodes": [path.name for path in validation_paths],
@@ -208,7 +250,7 @@ def main() -> None:
             str(instruction): int(count)
             for instruction, count in Counter(train_arrays["instruction"]).items()
         },
-        "checkpoint": str(checkpoint_path),
+        "checkpoint": str(args.output),
     }
     metrics_path = args.metrics_output.expanduser().resolve()
     metrics_path.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,299 @@
+{
+  "device": "cpu",
+  "num_parameters": 108132,
+  "num_episodes": 30,
+  "num_train_episodes": 21,
+  "num_validation_episodes": 9,
+  "num_train_frames": 4615,
+  "num_validation_frames": 2139,
+  "num_unique_train_instructions": 9,
+  "num_unique_validation_instructions": 9,
+  "train_phase_counts": {
+    "reach": 684,
+    "descend": 546,
+    "grasp": 630,
+    "lift": 651,
+    "transport": 1159,
+    "release": 945
+  },
+  "validation_phase_counts": {
+    "reach": 371,
+    "descend": 234,
+    "grasp": 270,
+    "lift": 279,
+    "transport": 580,
+    "release": 405
+  },
+  "epochs": 30,
+  "best_epoch": 20,
+  "batch_size": 64,
+  "learning_rate": 0.001,
+  "train": {
+    "loss": 0.21241087996676355,
+    "delta_mae_mm": 0.33626531857194003,
+    "gripper_accuracy": 0.990899241603467
+  },
+  "validation": {
+    "loss": 0.4775795208925034,
+    "delta_mae_mm": 0.5795427272814688,
+    "gripper_accuracy": 0.9911173445535297
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.331065044772457,
+      "loss": 1.1773066869847626,
+      "delta_mae_mm": 1.047778066531583,
+      "gripper_accuracy": 0.9747545582047685
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.9005794382043675,
+      "loss": 1.0194560395063446,
+      "delta_mae_mm": 0.9718939606248357,
+      "gripper_accuracy": 0.9756895745675549
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.6715015734520661,
+      "loss": 0.8570299425300397,
+      "delta_mae_mm": 0.9586814943644717,
+      "gripper_accuracy": 0.9845722300140253
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.55927471012878,
+      "loss": 0.8495814069659702,
+      "delta_mae_mm": 0.9434016533770702,
+      "gripper_accuracy": 0.9855072463768116
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.4659822395472976,
+      "loss": 0.7593771946895563,
+      "delta_mae_mm": 0.8781552291536918,
+      "gripper_accuracy": 0.9859747545582047
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.39585869196047635,
+      "loss": 0.7195564914580092,
+      "delta_mae_mm": 0.8117270710935692,
+      "gripper_accuracy": 0.9864422627395979
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.34985279834154237,
+      "loss": 0.6059505189758085,
+      "delta_mae_mm": 0.7155141532676548,
+      "gripper_accuracy": 0.9873772791023843
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.30719406250884446,
+      "loss": 0.5589624621316289,
+      "delta_mae_mm": 0.6783977806921111,
+      "gripper_accuracy": 0.9883122954651706
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.28897480882324866,
+      "loss": 0.5245110341800571,
+      "delta_mae_mm": 0.6287154218088211,
+      "gripper_accuracy": 0.9878447872837774
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.26765763413479887,
+      "loss": 0.52465206112272,
+      "delta_mae_mm": 0.6426827869154089,
+      "gripper_accuracy": 0.9897148200093502
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.2577298417316098,
+      "loss": 0.5071348414476395,
+      "delta_mae_mm": 0.6058046120255651,
+      "gripper_accuracy": 0.9897148200093502
+    },
+    {
+      "epoch": 12,
+      "train_loss": 0.24573379087938907,
+      "loss": 0.5006239132467151,
+      "delta_mae_mm": 0.6035661244454629,
+      "gripper_accuracy": 0.9906498363721365
+    },
+    {
+      "epoch": 13,
+      "train_loss": 0.2369806172973996,
+      "loss": 0.5063560645210514,
+      "delta_mae_mm": 0.5965453568362402,
+      "gripper_accuracy": 0.9915848527349228
+    },
+    {
+      "epoch": 14,
+      "train_loss": 0.22715753872565045,
+      "loss": 0.49011530469303627,
+      "delta_mae_mm": 0.5862947709560022,
+      "gripper_accuracy": 0.9906498363721365
+    },
+    {
+      "epoch": 15,
+      "train_loss": 0.22303282041203548,
+      "loss": 0.485362634818623,
+      "delta_mae_mm": 0.5778892237727322,
+      "gripper_accuracy": 0.9901823281907434
+    },
+    {
+      "epoch": 16,
+      "train_loss": 0.21724786536277696,
+      "loss": 0.5019390691261584,
+      "delta_mae_mm": 0.5786954742392331,
+      "gripper_accuracy": 0.9901823281907434
+    },
+    {
+      "epoch": 17,
+      "train_loss": 0.22045992009365933,
+      "loss": 0.5073746207956958,
+      "delta_mae_mm": 0.603267345075316,
+      "gripper_accuracy": 0.9901823281907434
+    },
+    {
+      "epoch": 18,
+      "train_loss": 0.22418692423230518,
+      "loss": 0.505787102950109,
+      "delta_mae_mm": 0.6072884766584953,
+      "gripper_accuracy": 0.9915848527349228
+    },
+    {
+      "epoch": 19,
+      "train_loss": 0.21224982196894976,
+      "loss": 0.48444095392750214,
+      "delta_mae_mm": 0.5793359667034893,
+      "gripper_accuracy": 0.9901823281907434
+    },
+    {
+      "epoch": 20,
+      "train_loss": 0.20362358862697627,
+      "loss": 0.4775795208925034,
+      "delta_mae_mm": 0.5795427272814688,
+      "gripper_accuracy": 0.9911173445535297
+    },
+    {
+      "epoch": 21,
+      "train_loss": 0.20840956023687401,
+      "loss": 0.49349602515965546,
+      "delta_mae_mm": 0.5936452366257263,
+      "gripper_accuracy": 0.9915848527349228
+    },
+    {
+      "epoch": 22,
+      "train_loss": 0.20184121331036542,
+      "loss": 0.4930851233669423,
+      "delta_mae_mm": 0.5785507162040465,
+      "gripper_accuracy": 0.9911173445535297
+    },
+    {
+      "epoch": 23,
+      "train_loss": 0.19653715549111528,
+      "loss": 0.5029562466027665,
+      "delta_mae_mm": 0.598679934824964,
+      "gripper_accuracy": 0.9915848527349228
+    },
+    {
+      "epoch": 24,
+      "train_loss": 0.18871234624867578,
+      "loss": 0.49228768555561536,
+      "delta_mae_mm": 0.5979534933476762,
+      "gripper_accuracy": 0.9906498363721365
+    },
+    {
+      "epoch": 25,
+      "train_loss": 0.1916715546659439,
+      "loss": 0.5250476868078635,
+      "delta_mae_mm": 0.6217745524460009,
+      "gripper_accuracy": 0.9915848527349228
+    },
+    {
+      "epoch": 26,
+      "train_loss": 0.19036177870124288,
+      "loss": 0.4997650845104314,
+      "delta_mae_mm": 0.6086287292314687,
+      "gripper_accuracy": 0.9915848527349228
+    },
+    {
+      "epoch": 27,
+      "train_loss": 0.194342440151219,
+      "loss": 0.5041994644888877,
+      "delta_mae_mm": 0.6026839537005271,
+      "gripper_accuracy": 0.9915848527349228
+    },
+    {
+      "epoch": 28,
+      "train_loss": 0.1841866612837994,
+      "loss": 0.5135857198821043,
+      "delta_mae_mm": 0.6053793100816951,
+      "gripper_accuracy": 0.9915848527349228
+    },
+    {
+      "epoch": 29,
+      "train_loss": 0.18701554148711208,
+      "loss": 0.5053257519007426,
+      "delta_mae_mm": 0.5964224393821607,
+      "gripper_accuracy": 0.9906498363721365
+    },
+    {
+      "epoch": 30,
+      "train_loss": 0.178937856980548,
+      "loss": 0.5168779090834088,
+      "delta_mae_mm": 0.5958465058446506,
+      "gripper_accuracy": 0.9911173445535297
+    }
+  ],
+  "train_episodes": [
+    "episode_0006_seed_1606_red.npz",
+    "episode_0007_seed_1607_green.npz",
+    "episode_0008_seed_1608_blue.npz",
+    "episode_0009_seed_1609_red.npz",
+    "episode_0010_seed_1610_green.npz",
+    "episode_0011_seed_1611_blue.npz",
+    "episode_0012_seed_1612_red.npz",
+    "episode_0013_seed_1613_green.npz",
+    "episode_0014_seed_1614_blue.npz",
+    "episode_0017_seed_1617_blue.npz",
+    "episode_0018_seed_1618_red.npz",
+    "episode_0019_seed_1619_green.npz",
+    "episode_0020_seed_1620_blue.npz",
+    "episode_0021_seed_1621_red.npz",
+    "episode_0022_seed_1622_green.npz",
+    "episode_0023_seed_1623_blue.npz",
+    "episode_0024_seed_1624_red.npz",
+    "episode_0025_seed_1625_green.npz",
+    "episode_0027_seed_1627_red.npz",
+    "episode_0028_seed_1628_green.npz",
+    "episode_0029_seed_1629_blue.npz"
+  ],
+  "validation_episodes": [
+    "episode_0000_seed_1600_red.npz",
+    "episode_0001_seed_1601_green.npz",
+    "episode_0002_seed_1602_blue.npz",
+    "episode_0003_seed_1603_red.npz",
+    "episode_0004_seed_1604_green.npz",
+    "episode_0005_seed_1605_blue.npz",
+    "episode_0015_seed_1615_red.npz",
+    "episode_0016_seed_1616_green.npz",
+    "episode_0026_seed_1626_blue.npz"
+  ],
+  "instruction_frame_counts": {
+    "Grasp the red object and put it in the box.": 395,
+    "Grasp the green object and put it in the box.": 488,
+    "Grasp the blue object and put it in the box.": 368,
+    "Pick up the red cube and place it in the bin.": 618,
+    "Pick up the green cube and place it in the bin.": 624,
+    "Pick up the blue cube and place it in the bin.": 731,
+    "Move the red block into the container.": 504,
+    "Move the green block into the container.": 396,
+    "Move the blue block into the container.": 491
+  },
+  "checkpoint": "checkpoints/flat_minivla_mocap.pt"
+}

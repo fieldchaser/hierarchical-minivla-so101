@@ -1,0 +1,31 @@
+{
+  "num_parameters": 107812,
+  "num_episodes": 1,
+  "batch_size": 32,
+  "steps": 1000,
+  "best_step": 975,
+  "image_shape": [
+    128,
+    128,
+    3
+  ],
+  "proprio_dim": 13,
+  "vocabulary_size": 12,
+  "phase_counts": {
+    "reach": 6,
+    "descend": 6,
+    "grasp": 5,
+    "lift": 5,
+    "transport": 5,
+    "release": 5
+  },
+  "initial": {
+    "delta_mae_mm": 1.129061565734446,
+    "gripper_accuracy": 0.53125
+  },
+  "final": {
+    "delta_mae_mm": 0.08619273285148665,
+    "gripper_accuracy": 1.0
+  },
+  "checkpoint": "checkpoints/flat_minivla_mocap_overfit.pt"
+}

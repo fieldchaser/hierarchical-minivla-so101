@@ -5,17 +5,20 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import Sequence
+from typing import Mapping, Sequence
 
 import numpy as np
 import torch
 from torch import nn
 
+from .state_policy import ACTION_DELTA_LIMIT, GRIPPER_CLOSED, GRIPPER_OPEN
 from .vision_data import validate_vision_episode_arrays
 
 PAD_TOKEN = "<pad>"
 UNK_TOKEN = "<unk>"
-PROPRIO_DIM = 10
+PROPRIO_DIM = 13
+MOVEMENT_THRESHOLD = 0.0005
+GRASP_ACTIVE_THRESHOLD = 0.35
 
 
 def instruction_tokens(instruction: str) -> list[str]:
@@ -58,7 +61,12 @@ def load_vision_episodes(paths: Sequence[str | Path]) -> dict[str, np.ndarray]:
             if not bool(data["success"]):
                 raise ValueError(f"Vision episode is not successful: {path}")
             proprio = np.concatenate(
-                [data["state_ee_xyz"], data["state_joints"], data["state_gripper"]],
+                [
+                    data["state_ee_xyz"],
+                    data["state_mocap_xyz"],
+                    data["state_joints"],
+                    data["state_gripper"],
+                ],
                 axis=1,
             ).astype(np.float32)
             if proprio.shape[1] != PROPRIO_DIM:
@@ -75,6 +83,36 @@ def load_vision_episodes(paths: Sequence[str | Path]) -> dict[str, np.ndarray]:
     if not collected["rgb"]:
         raise ValueError("No vision episodes were provided")
     return {key: np.concatenate(values) for key, values in collected.items()}
+
+
+def proprio_from_observation(
+    observation: Mapping[str, np.ndarray], command_xyz: np.ndarray
+) -> np.ndarray:
+    """Build the same robot-only proprioceptive vector used during training."""
+    proprio = np.concatenate(
+        [
+            observation["ee_pos"],
+            np.asarray(command_xyz),
+            observation["joints"],
+            observation["gripper"],
+        ]
+    ).astype(np.float32)
+    if proprio.shape != (PROPRIO_DIM,):
+        raise ValueError(f"Expected proprioception shape ({PROPRIO_DIM},)")
+    return proprio
+
+
+def transition_focused_mask(arrays: Mapping[str, np.ndarray]) -> np.ndarray:
+    """Remove repeated waits that give a memoryless policy conflicting labels."""
+    phases = np.asarray(arrays["phase"])
+    deltas = np.asarray(arrays["delta"])
+    proprio = np.asarray(arrays["proprio"])
+    moving = np.linalg.norm(deltas, axis=1) > MOVEMENT_THRESHOLD
+    active_grasp = (phases == 2) & (
+        proprio[:, -1] > GRASP_ACTIVE_THRESHOLD
+    )
+    release = phases == 5
+    return moving | active_grasp | release
 
 
 def split_vision_episode_paths(
@@ -193,6 +231,24 @@ class FlatMiniVLA(nn.Module):
         )
         return delta_loss + gripper_loss, delta_loss, gripper_loss
 
+    @torch.inference_mode()
+    def act(
+        self, rgb: np.ndarray, tokens: np.ndarray, proprio: np.ndarray
+    ) -> tuple[np.ndarray, float]:
+        """Predict one bounded Cartesian delta and a simulator gripper command."""
+        device = next(self.parameters()).device
+        rgb_tensor = torch.as_tensor(rgb, device=device).unsqueeze(0)
+        token_tensor = torch.as_tensor(tokens, dtype=torch.long, device=device)
+        proprio_tensor = torch.as_tensor(
+            proprio, dtype=torch.float32, device=device
+        ).unsqueeze(0)
+        if token_tensor.ndim == 1:
+            token_tensor = token_tensor.unsqueeze(0)
+        delta, gripper_logit = self(rgb_tensor, token_tensor, proprio_tensor)
+        bounded_delta = delta[0].clamp(-ACTION_DELTA_LIMIT, ACTION_DELTA_LIMIT)
+        gripper = GRIPPER_OPEN if gripper_logit.item() >= 0.0 else GRIPPER_CLOSED
+        return bounded_delta.cpu().numpy(), gripper
+
 
 def save_flat_minivla(
     policy: FlatMiniVLA, vocabulary: dict[str, int], path: str | Path
@@ -201,7 +257,7 @@ def save_flat_minivla(
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(
-        {"version": 2, "vocabulary": vocabulary, "state_dict": policy.state_dict()},
+        {"version": 3, "vocabulary": vocabulary, "state_dict": policy.state_dict()},
         path,
     )
     return path
@@ -212,7 +268,7 @@ def load_flat_minivla(
 ) -> tuple[FlatMiniVLA, dict[str, int]]:
     """Restore a Flat MiniVLA checkpoint and its word vocabulary."""
     checkpoint = torch.load(Path(path), map_location=map_location, weights_only=True)
-    if checkpoint.get("version") != 2:
+    if checkpoint.get("version") != 3:
         raise ValueError(f"Unsupported Flat MiniVLA version: {checkpoint.get('version')}")
     state_dict = checkpoint["state_dict"]
     vocabulary = checkpoint["vocabulary"]
