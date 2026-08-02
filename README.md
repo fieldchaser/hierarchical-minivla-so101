@@ -2,30 +2,28 @@
 
 A simulation-first research project for language-conditioned, multi-task robotic manipulation. The long-term question is whether explicit skill phases improve data efficiency and generalization over a flat vision-language-action policy.
 
-## Current milestone: goal-conditioned behavior cloning
+## Current milestone: first RGB-language-action training path
 
-Milestone 0 intentionally tests the smallest useful contract:
+The repository now contains a 42K-parameter Flat MiniVLA that maps a rendered
+RGB frame, natural-language instruction, and robot proprioception to Cartesian
+and gripper actions. On a phase-balanced batch from one real MuJoCo trajectory,
+training reduced Cartesian action MAE from `1.160 mm` to `0.088 mm` and reached
+100% gripper accuracy. This is a deliberate batch-overfit proof, not yet a
+closed-loop visual-policy success claim; see Milestone 12 for the reproducible
+command and scope.
+
+Milestone 0 began with the smallest useful symbolic contract:
 
 ```text
 robot state + three cube positions + one-hot goal + bin position -> action
 ```
 
-The repository currently contains:
-
-- a deterministic synthetic demonstration generator;
-- a transparent ridge-regression behavior-cloning policy;
-- tests for goal selection, training, and checkpoint round trips;
-- a smoke test that instantiates and steps ETH's SO-101 multicube MuJoCo scene.
-
-This is not yet a VLA and it does not claim task success in MuJoCo. Images, natural-language instructions, action chunking, and hierarchical skill prediction are later milestones.
-
-## Verified result
-
-On 2 August 2026, the baseline passed all five unit tests and reached a held-out
-synthetic action MSE of `3.42e-16` with the default seed. The upstream multicube
-scene also loaded successfully under MuJoCo 3.11, exposed 6 arm joints and 9
-cube-position values, and advanced one physics control step. The MSE is a data-
-path smoke-test metric, not a simulated pick-and-place success rate.
+That early ridge-regression baseline passed five tests and reached a held-out
+synthetic action MSE of `3.42e-16`. The upstream scene also loaded under MuJoCo
+3.11, exposed six arm joints and nine cube-position values, and advanced one
+physics step. The repository preserves that baseline alongside the physically
+executed expert, learned state policies, DAgger experiments, RGB collector, and
+current visual-language policy.
 
 ## Quick start
 
@@ -74,6 +72,7 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Define and headless-test the frame-aligned RGB-language data contract
 - [x] Verify one real rendered RGB episode in a foreground macOS terminal
 - [x] Select final camera framing from angle/top/front_close previews
+- [x] Overfit one real RGB-language-proprioception batch end to end
 - [ ] Add RGB observations and natural-language goals (Flat MiniVLA)
 - [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
 - [ ] Evaluate unseen layouts and instruction paraphrases
@@ -702,3 +701,48 @@ All three real episodes pass the validator. Their compressed sizes are 0.426 MB
 ignored by Git, while the three contact sheets are committed as small camera-
 selection evidence. The next milestone can now collect a multi-color visual
 dataset using the selected view before beginning Flat MiniVLA training.
+
+## Milestone 12: Flat MiniVLA batch-overfit proof
+
+The first visual policy now runs the complete supervised-learning path on a
+real rendered episode:
+
+```text
+128 x 128 RGB frame  -> small CNN ---------+
+natural-language instruction -> word mean --+-> action head -> delta xyz
+10-D robot proprioception -> state MLP -----+               -> gripper logit
+```
+
+The 10-D proprioceptive vector contains end-effector position, six arm joints,
+and the gripper state. Although the episode archive still contains simulator
+object and bin coordinates for evaluation, the Flat MiniVLA loader deliberately
+does not expose them to the model. Phase labels are used only to choose a
+balanced diagnostic batch; phase is not a policy input.
+
+Run the proof on the real `front_close` smoke episode:
+
+```bash
+python scripts/overfit_flat_minivla_batch.py \
+  --data-dir data/vision/smoke_front_close \
+  --output checkpoints/flat_minivla_overfit.pt \
+  --metrics-output results/flat_minivla_overfit.json \
+  --steps 1000
+```
+
+The deterministic batch contains 32 frames spread across reach, descend,
+grasp, lift, transport, and release. The trainer keeps the best intermediate
+checkpoint so a late fixed-learning-rate fluctuation cannot replace an already
+better model. The checkpoint includes both model weights and the word
+vocabulary and passes a save/load round-trip test.
+
+| Fixed-batch metric | Before training | Best checkpoint (step 925) |
+|---|---:|---:|
+| Cartesian action MAE | 1.160 mm | 0.088 mm |
+| Gripper accuracy | 46.88% | 100% |
+
+The policy has 42,116 trainable parameters and trained on the Mac CPU. This is
+an intentional batch-overfit test, not a closed-loop success result: it proves
+that real pixels, language, robot state, labels, optimization, serialization,
+and metrics agree before spending time or GPU money on a larger dataset. The
+next milestone is to collect randomized red/green/blue visual episodes and
+train the first held-out Flat MiniVLA baseline.
