@@ -203,6 +203,15 @@ class FlatMiniVLA(nn.Module):
     def forward(
         self, rgb: torch.Tensor, tokens: torch.Tensor, proprio: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor]:
+        fused = self.encode_observation(rgb, tokens, proprio)
+        output = self.action_head(fused)
+        delta = output[:, :3] * self.delta_std + self.delta_mean
+        return delta, output[:, 3]
+
+    def encode_observation(
+        self, rgb: torch.Tensor, tokens: torch.Tensor, proprio: torch.Tensor
+    ) -> torch.Tensor:
+        """Encode and concatenate vision, language, and robot state."""
         images = rgb.permute(0, 3, 1, 2).float() / 255.0 - 0.5
         vision = self.vision_encoder(images)
         token_mask = (tokens != 0).unsqueeze(-1)
@@ -210,9 +219,7 @@ class FlatMiniVLA(nn.Module):
         language = (embedded * token_mask).sum(dim=1) / token_mask.sum(dim=1).clamp_min(1)
         normalized_proprio = (proprio - self.proprio_mean) / self.proprio_std
         robot = self.proprio_encoder(normalized_proprio)
-        output = self.action_head(torch.cat([vision, language, robot], dim=1))
-        delta = output[:, :3] * self.delta_std + self.delta_mean
-        return delta, output[:, 3]
+        return torch.cat([vision, language, robot], dim=1)
 
     def loss(
         self,

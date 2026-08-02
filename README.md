@@ -2,17 +2,16 @@
 
 A simulation-first research project for language-conditioned, multi-task robotic manipulation. The long-term question is whether explicit skill phases improve data efficiency and generalization over a flat vision-language-action policy.
 
-## Current milestone: diagnosed Flat MiniVLA closed-loop baseline
+## Current milestone: first Hierarchical MiniVLA training path
 
-The repository contains a 108K-parameter Flat MiniVLA that maps a rendered RGB
-frame, natural-language instruction, and robot proprioception to Cartesian and
-gripper actions. Its original held-out offline result reaches `0.578 mm`
-Cartesian MAE and `99.06%` gripper accuracy, but formal closed-loop evaluation
-on ten unseen layouts succeeds in 0/10 episodes. A transition-focused variant
-nearly completes a seen training layout, including lift and bin alignment, but
-does not lift any target on unseen layouts. Milestone 14 documents why offline
-imitation metrics overstate control performance and motivates the next
-Hierarchical MiniVLA baseline.
+The Flat MiniVLA baseline reaches `0.578 mm` held-out offline Cartesian MAE but
+succeeds in 0/10 unseen closed-loop layouts. The repository now adds a 111K-
+parameter Hierarchical MiniVLA with a shared RGB-language-proprioception
+encoder, a six-class skill-phase head, and one action head per phase. On a
+phase-balanced batch from a real rendered trajectory, the first pipeline proof
+reaches 100% phase accuracy, 100% gripper accuracy, and `0.004 mm` Cartesian
+MAE. This is a batch-overfit result rather than a closed-loop claim; Milestone
+15 defines the architecture and next full-dataset experiment.
 
 Milestone 0 began with the smallest useful symbolic contract:
 
@@ -77,7 +76,9 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Overfit one real RGB-language-proprioception batch end to end
 - [x] Add RGB observations and natural-language goals (Flat MiniVLA)
 - [x] Evaluate and diagnose Flat MiniVLA in closed-loop MuJoCo rollouts
-- [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
+- [x] Add phase supervision and phase-conditioned Hierarchical MiniVLA heads
+- [x] Overfit one real phase-balanced Hierarchical MiniVLA batch
+- [ ] Train and evaluate Hierarchical MiniVLA on complete held-out episodes
 - [ ] Evaluate unseen layouts and instruction paraphrases
 
 ## Upstream attribution and licensing boundary
@@ -881,3 +882,54 @@ head has difficulty representing phase transitions under visual distribution
 shift. The next milestone introduces explicit skill-phase supervision and
 phase-conditioned action heads in a Hierarchical MiniVLA, using this Flat
 MiniVLA as the reproducible baseline.
+
+## Milestone 15: Hierarchical MiniVLA batch-overfit proof
+
+The first hierarchical visual policy reuses the exact Flat MiniVLA modality
+encoders and 13-D proprioceptive contract, then adds a shared fusion layer, a
+six-class phase head, and six phase-specific action heads:
+
+```text
+RGB -> spatial CNN ---------+
+Language -> word embedding -+-> shared fusion -> phase logits
+Proprio -> state MLP -------+                -> six action heads
+
+phase = reach / descend / grasp / lift / transport / release
+```
+
+During supervised training, the expert phase selects the action head so an
+early phase-classification error cannot route an example into the wrong action
+head. The phase head is optimized simultaneously with Cartesian regression and
+binary gripper prediction. At inference time the model can return its predicted
+phase, while a later closed-loop evaluator will apply a monotonic phase tracker
+to prevent backward or multi-stage jumps.
+
+The smoke experiment selects 36 real `front_close` frames, exactly six from
+each phase, from the same successful RGB-language episode used by the Flat
+pipeline proof:
+
+```bash
+python scripts/overfit_hierarchical_minivla_batch.py \
+  --data-dir data/vision/smoke_front_close \
+  --output checkpoints/hierarchical_minivla_overfit.pt \
+  --metrics-output results/hierarchical_minivla_overfit.json \
+  --steps 1500
+```
+
+The trainer retains the best intermediate checkpoint rather than the final
+optimization step. Step 1250 is selected because the phase classifier later
+fluctuates between 94.4% and 97.2% even while action error remains very low.
+
+| Fixed-batch metric | Before training | Best checkpoint |
+|---|---:|---:|
+| Cartesian action MAE | 1.096 mm | 0.004 mm |
+| Gripper accuracy | 55.56% | 100% |
+| Skill-phase accuracy | 8.33% | 100% |
+
+The model has 111,166 trainable parameters, only about 3K more than the formal
+Flat MiniVLA. Its checkpoint stores the vocabulary, normalization statistics,
+phase ordering, and all model weights and passes an independent round-trip
+test. As with every batch-overfit proof, these numbers establish implementation
+correctness, not generalization. The next milestone will train the hierarchical
+policy on the same 21 training and nine held-out episodes as the Flat baseline,
+report per-phase validation metrics, and only then run closed-loop rollouts.
