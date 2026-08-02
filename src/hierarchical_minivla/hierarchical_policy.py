@@ -21,6 +21,26 @@ from .state_policy import (
 NUM_PHASES = len(PHASE_NAMES)
 
 
+def phase_progress_summary(final_phases: Sequence[int]) -> dict[str, object]:
+    """Summarize terminal phase progress for sparse-reward rollouts."""
+    phases = np.asarray(final_phases, dtype=np.int64)
+    if phases.size == 0:
+        raise ValueError("At least one final phase is required")
+    if np.any((phases < 0) | (phases >= NUM_PHASES)):
+        raise ValueError("Final phase index is out of range")
+    return {
+        "mean_final_phase": float(phases.mean()),
+        "final_phase_counts": {
+            name: int(np.count_nonzero(phases == index))
+            for index, name in enumerate(PHASE_NAMES)
+        },
+        "reached_phase_counts": {
+            name: int(np.count_nonzero(phases >= index))
+            for index, name in enumerate(PHASE_NAMES)
+        },
+    }
+
+
 def load_hierarchical_episodes(
     paths: Sequence[str | Path],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:

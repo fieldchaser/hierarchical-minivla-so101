@@ -14,6 +14,7 @@ import numpy as np
 from hierarchical_minivla.hierarchical_policy import (
     MonotonicPhaseTracker,
     load_hierarchical_policy,
+    phase_progress_summary,
 )
 from hierarchical_minivla.scripted_expert import PHASE_NAMES, is_released_in_bin
 from hierarchical_minivla.state_policy import observation_to_feature
@@ -153,6 +154,9 @@ def main() -> None:
         "success_rate": num_successes / args.episodes,
         "transition_votes": args.transition_votes,
         "phase_source": args.phase_source,
+        **phase_progress_summary(
+            [PHASE_NAMES.index(result["final_phase"]) for result in results]
+        ),
         "results": results,
     }
     if args.output:

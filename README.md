@@ -67,7 +67,8 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Compare flat and hierarchical state policies
 - [x] Expand to recovery-augmented 120-episode data
 - [x] Aggregate on-policy DAgger corrections (round 1)
-- [ ] Run DAgger round 2 from the updated policy
+- [x] Run DAgger round 2 from the updated policy
+- [ ] Target the descend-to-grasp boundary in DAgger round 3
 - [ ] Add RGB observations and natural-language goals (Flat MiniVLA)
 - [ ] Add reach/grasp/transport/release supervision (Hierarchical MiniVLA)
 - [ ] Evaluate unseen layouts and instruction paraphrases
@@ -363,3 +364,55 @@ negative result: DAgger is iterative, and a single round labels failures from
 the pre-DAgger policy only. Round 2 must roll out the updated checkpoint so that
 the next set reflects its new failure distribution rather than repeatedly
 sampling the original one.
+
+## Milestone 7: on-policy boundary DAgger, round 2
+
+Round 2 rolls out the round-1 checkpoint on 30 new randomized scenes. This is
+the defining DAgger loop: each new dataset follows the updated learner's state
+distribution instead of replaying failures from the original policy.
+
+```bash
+python scripts/collect_dagger_dataset.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --checkpoint checkpoints/hierarchical_state_policy_dagger_boundary_r1.pt \
+  --output-dir data/dagger/round_2_boundary \
+  --episodes 30 \
+  --seed-start 500
+
+python scripts/train_hierarchical_state_policy.py \
+  --data-dir data/scripted/recovery_mocap_120 \
+             data/dagger/round_1_boundary \
+             data/dagger/round_2_boundary \
+  --output checkpoints/hierarchical_state_policy_dagger_boundary_r2.pt \
+  --metrics-output results/hierarchical_state_dagger_boundary_r2_offline.json \
+  --epochs 300
+```
+
+The hybrid learner/expert collector succeeded in 28/30 scenes (93.33%), up
+from 25/30 in round 1. It saved 4,509 oracle-labeled states, including 1,350
+states reached under learner control. Aggregating all successful scripted and
+DAgger episodes produced 36,125 training and validation steps across 173
+episodes.
+
+| Metric | Boundary DAgger R1 | Boundary DAgger R2 |
+|---|---:|---:|
+| Hybrid collection success | 25/30 | 28/30 |
+| Learner-generated labeled states | 1,097 | 1,350 |
+| Validation Cartesian MAE | 0.263 mm | 0.270 mm |
+| Validation gripper accuracy | 100% | 100% |
+| Validation phase accuracy | 91.95% | 93.02% |
+| Full learned-policy success | 0/10 | 0/10 |
+| Reached descend, same unseen seeds 600-609 | 4/10 | 7/10 |
+
+Because task success is a sparse terminal metric, evaluation now also records
+the terminal phase distribution, mean final phase, and how many rollouts
+reached each phase. On the same unseen layouts, round 2 raises mean final phase
+from `0.4` to `0.7` and moves three additional rollouts from reach into descend.
+This is genuine intermediate progress, but not task completion: no rollout
+reaches grasp, and final success remains 0/10.
+
+The current bottleneck has therefore shifted from the reach-to-descend boundary
+to descend-to-grasp. The next DAgger round should use the round-2 checkpoint and
+collect new on-policy corrections around that boundary before any claim that
+the state controller is solved. RGB and language remain intentionally deferred
+until the closed-loop control pipeline has a stronger base.

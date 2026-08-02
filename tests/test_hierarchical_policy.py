@@ -11,6 +11,7 @@ from hierarchical_minivla.hierarchical_policy import (
     MonotonicPhaseTracker,
     balanced_phase_weights,
     load_hierarchical_policy,
+    phase_progress_summary,
     save_hierarchical_policy,
 )
 
@@ -41,6 +42,13 @@ class HierarchicalPolicyTest(unittest.TestCase):
         self.assertEqual(tracker.update(5), 1)
         self.assertEqual(tracker.update(2), 1)
         self.assertEqual(tracker.update(2), 2)
+
+    def test_phase_progress_summary_reports_terminal_and_reached_counts(self) -> None:
+        summary = phase_progress_summary([0, 1, 1, 3])
+        self.assertEqual(summary["mean_final_phase"], 1.25)
+        self.assertEqual(summary["final_phase_counts"]["descend"], 2)
+        self.assertEqual(summary["reached_phase_counts"]["descend"], 3)
+        self.assertEqual(summary["reached_phase_counts"]["grasp"], 1)
 
     def test_checkpoint_round_trip_preserves_phase_and_action(self) -> None:
         policy = make_policy()
