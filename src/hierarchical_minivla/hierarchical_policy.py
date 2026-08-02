@@ -134,6 +134,38 @@ class MonotonicPhaseTracker:
             self.advance_votes = 0
         return self.current_phase
 
+    def advance(self) -> int:
+        """Advance exactly one phase when an external completion gate fires."""
+        if self.current_phase + 1 < NUM_PHASES:
+            self.current_phase += 1
+        self.advance_votes = 0
+        return self.current_phase
+
+
+@dataclass
+class ActionConvergenceTracker:
+    """Detect when consecutive Cartesian actions have converged near zero."""
+
+    threshold_m: float
+    required_steps: int
+    consecutive_steps: int = 0
+
+    def __post_init__(self) -> None:
+        if self.threshold_m <= 0.0:
+            raise ValueError("threshold_m must be positive")
+        if self.required_steps < 1:
+            raise ValueError("required_steps must be positive")
+
+    def update(self, delta: np.ndarray) -> bool:
+        if float(np.linalg.norm(delta)) <= self.threshold_m:
+            self.consecutive_steps += 1
+        else:
+            self.consecutive_steps = 0
+        return self.consecutive_steps >= self.required_steps
+
+    def reset(self) -> None:
+        self.consecutive_steps = 0
+
 
 class HierarchicalStateGoalPolicy(nn.Module):
     """Shared state encoder with a phase head and one action head per phase."""

@@ -19,6 +19,7 @@ from hierarchical_minivla.flat_minivla import (
 from hierarchical_minivla.hierarchical_minivla import load_hierarchical_minivla
 from hierarchical_minivla.hierarchical_policy import (
     TRANSPORT_XY_TOLERANCE,
+    ActionConvergenceTracker,
     MonotonicPhaseTracker,
     observed_event_next_phase,
     phase_progress_summary,
@@ -76,6 +77,12 @@ def main() -> None:
     parser.add_argument("--cube-pos-std", type=float, default=0.006)
     parser.add_argument("--max-steps", type=int, default=400)
     parser.add_argument("--phase-votes", type=int, default=3)
+    parser.add_argument("--reach-convergence-steps", type=int, default=0)
+    parser.add_argument("--reach-convergence-threshold-mm", type=float, default=0.5)
+    parser.add_argument("--descend-convergence-steps", type=int, default=0)
+    parser.add_argument("--descend-convergence-threshold-mm", type=float, default=0.5)
+    parser.add_argument("--transport-convergence-steps", type=int, default=0)
+    parser.add_argument("--transport-convergence-threshold-mm", type=float, default=0.5)
     parser.add_argument("--trace-every", type=int, default=25)
     parser.add_argument("--camera", default="front_close")
     parser.add_argument("--render-width", type=int, default=128)
@@ -90,6 +97,18 @@ def main() -> None:
         parser.error("--max-steps must be positive")
     if args.phase_votes < 1:
         parser.error("--phase-votes must be positive")
+    if args.reach_convergence_steps < 0:
+        parser.error("--reach-convergence-steps cannot be negative")
+    if args.reach_convergence_threshold_mm <= 0.0:
+        parser.error("--reach-convergence-threshold-mm must be positive")
+    if args.descend_convergence_steps < 0:
+        parser.error("--descend-convergence-steps cannot be negative")
+    if args.descend_convergence_threshold_mm <= 0.0:
+        parser.error("--descend-convergence-threshold-mm must be positive")
+    if args.transport_convergence_steps < 0:
+        parser.error("--transport-convergence-steps cannot be negative")
+    if args.transport_convergence_threshold_mm <= 0.0:
+        parser.error("--transport-convergence-threshold-mm must be positive")
     if args.trace_every < 1:
         parser.error("--trace-every must be positive")
 
@@ -127,8 +146,24 @@ def main() -> None:
         )
 
         tracker = MonotonicPhaseTracker(required_votes=args.phase_votes)
+        reach_convergence = ActionConvergenceTracker(
+            threshold_m=args.reach_convergence_threshold_mm / 1000.0,
+            required_steps=max(1, args.reach_convergence_steps),
+        )
+        descend_convergence = ActionConvergenceTracker(
+            threshold_m=args.descend_convergence_threshold_mm / 1000.0,
+            required_steps=max(1, args.descend_convergence_steps),
+        )
+        transport_convergence = ActionConvergenceTracker(
+            threshold_m=args.transport_convergence_threshold_mm / 1000.0,
+            required_steps=max(1, args.transport_convergence_steps),
+        )
         controller_transitions = [
-            {"step": 0, "phase": PHASE_NAMES[tracker.current_phase]}
+            {
+                "step": 0,
+                "phase": PHASE_NAMES[tracker.current_phase],
+                "reason": "initial",
+            }
         ]
         observed_phase = 0
         observed_phase_steps = 0
@@ -162,10 +197,45 @@ def main() -> None:
             predicted_observed_agreements += int(predicted_phase == observed_phase)
             tracker.update(predicted_phase)
             controller_advanced = tracker.current_phase != previous_controller_phase
+            transition_reason = "phase_vote"
+            if (
+                not controller_advanced
+                and tracker.current_phase == 0
+                and args.reach_convergence_steps > 0
+                and reach_convergence.update(delta)
+            ):
+                tracker.advance()
+                controller_advanced = True
+                transition_reason = "reach_action_convergence"
+            elif (
+                not controller_advanced
+                and tracker.current_phase == 1
+                and args.descend_convergence_steps > 0
+                and descend_convergence.update(delta)
+            ):
+                tracker.advance()
+                controller_advanced = True
+                transition_reason = "descend_action_convergence"
+            elif (
+                not controller_advanced
+                and tracker.current_phase == 4
+                and args.transport_convergence_steps > 0
+                and transport_convergence.update(delta)
+            ):
+                tracker.advance()
+                controller_advanced = True
+                transition_reason = "transport_action_convergence"
             if controller_advanced:
                 controller_transitions.append(
-                    {"step": step, "phase": PHASE_NAMES[tracker.current_phase]}
+                    {
+                        "step": step,
+                        "phase": PHASE_NAMES[tracker.current_phase],
+                        "reason": transition_reason,
+                    }
                 )
+                reach_convergence.reset()
+                descend_convergence.reset()
+                transport_convergence.reset()
                 delta, gripper, _ = policy.act(
                     frame, tokens, proprio, phase=tracker.current_phase
                 )
@@ -319,6 +389,12 @@ def main() -> None:
         "camera": args.camera,
         "device": str(device),
         "phase_votes": args.phase_votes,
+        "reach_convergence_steps": args.reach_convergence_steps,
+        "reach_convergence_threshold_mm": args.reach_convergence_threshold_mm,
+        "descend_convergence_steps": args.descend_convergence_steps,
+        "descend_convergence_threshold_mm": args.descend_convergence_threshold_mm,
+        "transport_convergence_steps": args.transport_convergence_steps,
+        "transport_convergence_threshold_mm": args.transport_convergence_threshold_mm,
         "num_closed_command_episodes": sum(
             result["closed_command_ever"] for result in results
         ),

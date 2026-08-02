@@ -1,0 +1,535 @@
+{
+  "seed_start": 1609,
+  "num_successes": 0,
+  "num_episodes": 1,
+  "success_rate": 0.0,
+  "camera": "front_close",
+  "device": "cpu",
+  "phase_votes": 3,
+  "num_closed_command_episodes": 0,
+  "num_open_after_close_episodes": 0,
+  "num_lifted_episodes": 0,
+  "num_bin_aligned_episodes": 0,
+  "mean_min_grasp_distance_m": 0.07112964062031175,
+  "mean_min_reach_distance_m": 0.0004505342739390138,
+  "mean_predicted_observed_phase_agreement": 0.055,
+  "furthest_milestone_counts": {
+    "near_reach": 1
+  },
+  "controller_phase_progress": {
+    "mean_final_phase": 0.0,
+    "final_phase_counts": {
+      "reach": 1,
+      "descend": 0,
+      "grasp": 0,
+      "lift": 0,
+      "transport": 0,
+      "release": 0
+    },
+    "reached_phase_counts": {
+      "reach": 1,
+      "descend": 0,
+      "grasp": 0,
+      "lift": 0,
+      "transport": 0,
+      "release": 0
+    }
+  },
+  "observed_phase_progress": {
+    "mean_final_phase": 1.0,
+    "final_phase_counts": {
+      "reach": 0,
+      "descend": 1,
+      "grasp": 0,
+      "lift": 0,
+      "transport": 0,
+      "release": 0
+    },
+    "reached_phase_counts": {
+      "reach": 1,
+      "descend": 1,
+      "grasp": 0,
+      "lift": 0,
+      "transport": 0,
+      "release": 0
+    }
+  },
+  "results": [
+    {
+      "seed": 1609,
+      "goal_cube": "red",
+      "instruction": "Pick up the red cube and place it in the bin.",
+      "success": false,
+      "steps": 400,
+      "controller_final_phase": "reach",
+      "controller_phase_transitions": [
+        {
+          "step": 0,
+          "phase": "reach"
+        }
+      ],
+      "observed_final_phase": "descend",
+      "observed_phase_transitions": [
+        {
+          "step": 0,
+          "phase": "reach"
+        },
+        {
+          "step": 22,
+          "phase": "descend"
+        }
+      ],
+      "rollout_trace": [
+        {
+          "step": 1,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "reach",
+          "action_delta": [
+            0.003731000004336238,
+            -0.001478999969549477,
+            0.004000000189989805
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.227555,
+            0.498521,
+            0.119329
+          ],
+          "reach_distance_m": 0.0655137816388041,
+          "grasp_distance_m": 0.07112964062031175,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.019997
+          ]
+        },
+        {
+          "step": 25,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            0.00016900000628083944,
+            0.0010179999517276883,
+            1.8999999156221747e-05
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.213803,
+            0.554597,
+            0.150154
+          ],
+          "reach_distance_m": 0.0004505342739390138,
+          "grasp_distance_m": 0.07215569275920108,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 50,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            -6.000000212225132e-06,
+            1.8000000636675395e-05,
+            4.999999873689376e-06
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212642,
+            0.556546,
+            0.150609
+          ],
+          "reach_distance_m": 0.002124463905470408,
+          "grasp_distance_m": 0.07263769160303235,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 75,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            -7.000000096013537e-06,
+            -3.099999958067201e-05,
+            9.999999974752427e-07
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212621,
+            0.556548,
+            0.150591
+          ],
+          "reach_distance_m": 0.002128271410173852,
+          "grasp_distance_m": 0.07262022015685199,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 100,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            -7.000000096013537e-06,
+            -3.7000001611886546e-05,
+            1.9999999949504854e-06
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212635,
+            0.55652,
+            0.150593
+          ],
+          "reach_distance_m": 0.002098734666302127,
+          "grasp_distance_m": 0.07262104374361938,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 125,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            -9.000000318337698e-06,
+            2.300000051036477e-05,
+            3.000000106112566e-06
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212618,
+            0.556582,
+            0.15059
+          ],
+          "reach_distance_m": 0.002159782608168998,
+          "grasp_distance_m": 0.07261950351252187,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 150,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            -6.000000212225132e-06,
+            1.8999999156221747e-05,
+            6.000000212225132e-06
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212639,
+            0.556551,
+            0.150608
+          ],
+          "reach_distance_m": 0.002129321021192178,
+          "grasp_distance_m": 0.07263639692007597,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 175,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            1.4999999621068127e-05,
+            2.099999983329326e-05,
+            -4.999999873689376e-06
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212615,
+            0.556558,
+            0.150594
+          ],
+          "reach_distance_m": 0.002140138876354177,
+          "grasp_distance_m": 0.07262344018328219,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 200,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            1.4000000192027073e-05,
+            -1.9999999949504854e-06,
+            -6.000000212225132e-06
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212618,
+            0.556532,
+            0.150595
+          ],
+          "reach_distance_m": 0.002116062287125238,
+          "grasp_distance_m": 0.07262356548330329,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 225,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            1.4000000192027073e-05,
+            1.5999999959603883e-05,
+            -3.000000106112566e-06
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212626,
+            0.55653,
+            0.150596
+          ],
+          "reach_distance_m": 0.002112280952578617,
+          "grasp_distance_m": 0.07262463524750462,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 250,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            7.000000096013537e-06,
+            -3.000000106112566e-06,
+            9.999999974752427e-07
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212635,
+            0.556496,
+            0.150601
+          ],
+          "reach_distance_m": 0.0020799325090931522,
+          "grasp_distance_m": 0.07262862795359745,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 275,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            -7.999999979801942e-06,
+            1.4999999621068127e-05,
+            4.999999873689376e-06
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212631,
+            0.55656,
+            0.1506
+          ],
+          "reach_distance_m": 0.002137851489205791,
+          "grasp_distance_m": 0.07262925006493752,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 300,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            9.999999747378752e-06,
+            -6.000000212225132e-06,
+            -9.999999974752427e-07
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212623,
+            0.556523,
+            0.150595
+          ],
+          "reach_distance_m": 0.002106128625314883,
+          "grasp_distance_m": 0.07262315101818725,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 325,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            -7.999999979801942e-06,
+            1.4999999621068127e-05,
+            7.000000096013537e-06
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212643,
+            0.556547,
+            0.150603
+          ],
+          "reach_distance_m": 0.00212293872827602,
+          "grasp_distance_m": 0.07263179077811473,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 350,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            1.4000000192027073e-05,
+            2.499999936844688e-05,
+            -7.999999979801942e-06
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212607,
+            0.556546,
+            0.150592
+          ],
+          "reach_distance_m": 0.00213208955144318,
+          "grasp_distance_m": 0.07262078763315943,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 375,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            3.999999989900971e-06,
+            6.000000212225132e-06,
+            -3.000000106112566e-06
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212598,
+            0.556512,
+            0.150581
+          ],
+          "reach_distance_m": 0.002101641855035775,
+          "grasp_distance_m": 0.07260864598968794,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        },
+        {
+          "step": 400,
+          "predicted_phase": "reach",
+          "controller_phase": "reach",
+          "observed_phase": "descend",
+          "action_delta": [
+            -6.000000212225132e-06,
+            -3.899999865097925e-05,
+            1.9999999949504854e-06
+          ],
+          "gripper_command": 1.0,
+          "mocap_xyz": [
+            -0.212635,
+            0.556531,
+            0.150596
+          ],
+          "reach_distance_m": 0.0021091960400791243,
+          "grasp_distance_m": 0.07262415260218429,
+          "cube_xyz": [
+            -0.198383,
+            0.558651,
+            0.02
+          ]
+        }
+      ],
+      "predicted_phase_counts": {
+        "reach": 400,
+        "descend": 0,
+        "grasp": 0,
+        "lift": 0,
+        "transport": 0,
+        "release": 0
+      },
+      "predicted_observed_phase_agreement": 0.055,
+      "furthest_milestone": "near_reach",
+      "min_reach_distance_m": 0.0004505342739390138,
+      "min_grasp_distance_m": 0.07112964062031175,
+      "closed_command_ever": false,
+      "first_close_step": null,
+      "first_open_after_close_step": null,
+      "first_lift_step": null,
+      "first_bin_aligned_step": null,
+      "final_gripper_command": 1.0,
+      "final_gripper_angle": 0.9998967488597817,
+      "max_cube_height_m": 0.01999994719755288,
+      "min_cube_bin_xy_distance_m": 0.13092080232907707,
+      "final_cube_xyz": [
+        -0.198383,
+        0.558651,
+        0.02
+      ],
+      "bin_xyz": [
+        -0.196983,
+        0.689564,
+        0.021
+      ],
+      "final_mocap_xyz": [
+        -0.212635,
+        0.556531,
+        0.150596
+      ],
+      "final_ee_xyz": [
+        -0.218601,
+        0.554101,
+        0.137696
+      ]
+    }
+  ]
+}

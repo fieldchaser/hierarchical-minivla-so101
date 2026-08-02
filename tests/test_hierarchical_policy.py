@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from hierarchical_minivla.hierarchical_policy import (
+    ActionConvergenceTracker,
     HierarchicalStateGoalPolicy,
     MonotonicPhaseTracker,
     balanced_phase_weights,
@@ -43,6 +44,23 @@ class HierarchicalPolicyTest(unittest.TestCase):
         self.assertEqual(tracker.update(5), 1)
         self.assertEqual(tracker.update(2), 1)
         self.assertEqual(tracker.update(2), 2)
+
+    def test_phase_tracker_can_advance_from_external_completion_gate(self) -> None:
+        tracker = MonotonicPhaseTracker(required_votes=2)
+        self.assertEqual(tracker.advance(), 1)
+        self.assertEqual(tracker.advance(), 2)
+
+    def test_action_convergence_requires_consecutive_small_actions(self) -> None:
+        tracker = ActionConvergenceTracker(threshold_m=0.0005, required_steps=3)
+        small = np.array([0.0001, 0.0001, 0.0001])
+        large = np.array([0.001, 0.0, 0.0])
+
+        self.assertFalse(tracker.update(small))
+        self.assertFalse(tracker.update(small))
+        self.assertFalse(tracker.update(large))
+        self.assertFalse(tracker.update(small))
+        self.assertFalse(tracker.update(small))
+        self.assertTrue(tracker.update(small))
 
     def test_phase_progress_summary_reports_terminal_and_reached_counts(self) -> None:
         summary = phase_progress_summary([0, 1, 1, 3])

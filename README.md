@@ -2,17 +2,20 @@
 
 A simulation-first research project for language-conditioned, multi-task robotic manipulation. The long-term question is whether explicit skill phases improve data efficiency and generalization over a flat vision-language-action policy.
 
-## Current milestone: Visual DAgger fixes closed-loop reach
+## Current milestone: first complete visual closed-loop rollout
 
-Visual DAgger Round 1 records 120 expert corrections on states visited by the
-recovery policy before expert takeover completes the trajectory. Adding this
-single 260-frame episode improves fixed held-out autonomous MAE from `0.347 mm`
-to `0.330 mm`. More importantly, the seed-1609 closed loop reaches within 2.14
-mm of the target and the observed physical phase advances to descend for the
-first time. The remaining failure is now phase transition rather than spatial
-drift: all 400 raw predictions remain reach, so the controller never selects
-the descend head. Milestone 19 separates this progress from task success and
-defines Round 2 around the newly reached reach-to-descend boundary.
+Visual DAgger Round 2 and explicit skill-termination gates produce the first
+complete RGB-language-proprioception rollout on seen seed 1609. The policy
+reaches, grasps, lifts, transports, and releases the red cube into the bin in
+399 steps. Learned phase votes advance grasp-to-lift and lift-to-transport;
+action-convergence gates terminate reach, descend, and transport when their
+Cartesian commands settle near zero. These gates use policy outputs and phase
+history, not simulator object coordinates.
+
+This is a `1/1` seen-layout integration result, not a generalization claim.
+Milestone 20 records the raw failure, three gate ablations, fixed held-out
+metrics, and the exact successful command before evaluation expands to unseen
+layouts and instruction paraphrases.
 
 Milestone 0 began with the smallest useful symbolic contract:
 
@@ -83,7 +86,8 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Diagnose Hierarchical MiniVLA on a seen closed-loop layout
 - [x] Add RGB recovery demonstrations for off-trajectory correction
 - [x] Aggregate policy-visited RGB corrections with visual DAgger round 1
-- [ ] Target the visual reach-to-descend boundary in DAgger round 2
+- [x] Target the visual reach-to-descend boundary in DAgger round 2
+- [x] Add history-aware skill termination and complete a seen visual rollout
 - [ ] Evaluate unseen layouts and instruction paraphrases
 
 ## Upstream attribution and licensing boundary
@@ -1217,3 +1221,95 @@ fixed its targeted spatial-control error and exposed the next bottleneck rather
 than completing the task. Round 2 will roll out this new checkpoint and record
 the on-policy reach-to-descend boundary followed by expert takeover, supplying
 phase labels on the states that did not exist in the Round-1 failure trajectory.
+
+## Milestone 20: history-aware termination completes a seen visual rollout
+
+Visual DAgger Round 2 starts from the Round-1 checkpoint on the same diagnostic
+seed. The learner reaches the physical reach-to-descend boundary after 23
+states, then the scripted expert takes over for 104 states and completes the
+episode. The saved 127-frame trajectory directly labels the newly visited
+boundary and all later expert states.
+
+```bash
+python scripts/train_hierarchical_minivla.py \
+  --data-dir data/vision/train_30 \
+  --extra-train-dir data/vision/recovery_30_008 \
+  --extra-train-dir data/vision/dagger_round1_seen1609 \
+  --extra-train-dir data/vision/dagger_round2_boundary1609 \
+  --epochs 30 \
+  --batch-size 64 \
+  --device cpu \
+  --output checkpoints/hierarchical_minivla_dagger_r2.pt \
+  --metrics-output results/hierarchical_minivla_dagger_r2_offline.json
+```
+
+Validation still uses the same nine original episodes. Round 2 selects epoch
+14 but slightly regresses the aggregate held-out metrics:
+
+| Fixed held-out metric | Visual DAgger R1 | Visual DAgger R2 |
+|---|---:|---:|
+| Phase accuracy | **96.54%** | 95.93% |
+| Teacher-routed action MAE | **0.288 mm** | 0.320 mm |
+| Autonomous-routed action MAE | **0.330 mm** | 0.368 mm |
+| Autonomous gripper accuracy | 99.16% | 99.16% |
+
+The closed loop nevertheless improves its closest reach-target distance from
+2.14 mm to 0.45 mm. It still predicts reach on all 400 frames after arriving.
+The boundary sample itself is inherently history-dependent: nearly the same
+image and proprioceptive state can be the last reach observation or the first
+descend observation. A memoryless phase classifier can therefore receive two
+different labels for effectively the same input. More repetitions of the same
+boundary label do not resolve this perceptual aliasing.
+
+The evaluator now supports opt-in action-convergence termination. A gate fires
+only when the selected Cartesian action remains below a threshold for a
+required number of consecutive steps. It advances exactly one phase through
+the existing monotonic tracker and resets on every transition. The feature is
+disabled by default, so all earlier raw rollouts remain reproducible. It uses
+neither cube positions nor bin positions to control the robot.
+
+The three gates form a useful closed-loop ablation on seen seed 1609:
+
+| Controller configuration | Final milestone | Key physical result | Success |
+|---|---|---|---:|
+| Raw Round 2 | Near reach | 0.45 mm from reach target | 0/1 |
+| + reach convergence | Near grasp | 5.55 mm from grasp target | 0/1 |
+| + descend convergence | Bin aligned | Lifted; 8.70 mm from bin center | 0/1 |
+| + transport convergence | Released | Cube released 5.55 mm from bin center | **1/1** |
+
+The successful rollout is reproducible with:
+
+```bash
+python scripts/evaluate_hierarchical_minivla.py \
+  --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning \
+  --checkpoint checkpoints/hierarchical_minivla_dagger_r2.pt \
+  --episodes 1 \
+  --seed-start 1609 \
+  --cube-pos-std 0.006 \
+  --max-steps 500 \
+  --phase-votes 3 \
+  --reach-convergence-steps 5 \
+  --reach-convergence-threshold-mm 0.5 \
+  --descend-convergence-steps 5 \
+  --descend-convergence-threshold-mm 0.5 \
+  --transport-convergence-steps 5 \
+  --transport-convergence-threshold-mm 0.5 \
+  --trace-every 25 \
+  --camera front_close \
+  --render-width 128 \
+  --render-height 128 \
+  --device cpu \
+  --output results/hierarchical_minivla_dagger_r2_gate3_seen_1609.json
+```
+
+The phase sequence is fully auditable. Reach-to-descend fires by convergence at
+step 32, descend-to-grasp at step 60, the learned classifier advances to lift
+at step 220 and transport at step 343, and transport convergence selects
+release at step 398. The cube is physically lifted at step 235, aligned over
+the bin at step 389, and released successfully at step 399.
+
+This experiment establishes end-to-end interface correctness and one complete
+visual closed loop. It does not establish robustness: seed 1609 is part of the
+training split, and the convergence thresholds were diagnosed on this rollout.
+The next experiment must keep these settings fixed and report performance on
+unseen seeds, all three colors, and held-out instruction paraphrases.
