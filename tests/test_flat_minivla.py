@@ -11,6 +11,7 @@ from hierarchical_minivla.flat_minivla import (
     FlatMiniVLA,
     build_vocabulary,
     encode_instructions,
+    load_vision_episodes,
     load_flat_minivla,
     phase_balanced_indices,
     proprio_from_observation,
@@ -147,6 +148,36 @@ class FlatMiniVLATest(unittest.TestCase):
         np.testing.assert_array_equal(
             transition_focused_mask(arrays),
             [False, True, True, False, True],
+        )
+
+    def test_episode_loader_can_select_only_dagger_frames(self) -> None:
+        num_steps = 4
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "episode.npz"
+            np.savez_compressed(
+                path,
+                rgb=np.zeros((num_steps, 8, 8, 3), dtype=np.uint8),
+                instruction=np.asarray(["Pick up the red cube."] * num_steps),
+                state_ee_xyz=np.zeros((num_steps, 3), dtype=np.float32),
+                state_mocap_xyz=np.zeros((num_steps, 3), dtype=np.float32),
+                state_joints=np.zeros((num_steps, 6), dtype=np.float32),
+                state_gripper=np.ones((num_steps, 1), dtype=np.float32),
+                cubes_xyz=np.zeros((num_steps, 9), dtype=np.float32),
+                state_goal=np.zeros((num_steps, 3), dtype=np.float32),
+                goal_pos=np.zeros((num_steps, 3), dtype=np.float32),
+                action_ee_xyz=np.arange(num_steps * 3, dtype=np.float32).reshape(
+                    num_steps, 3
+                ),
+                action_gripper=np.ones((num_steps, 1), dtype=np.float32),
+                phase=np.zeros(num_steps, dtype=np.int64),
+                dagger=np.asarray([True, False, True, False]),
+                success=np.asarray(True),
+            )
+            arrays = load_vision_episodes([path], frame_mask_key="dagger")
+
+        self.assertEqual(len(arrays["rgb"]), 2)
+        np.testing.assert_array_equal(
+            arrays["delta"], [[0.0, 1.0, 2.0], [6.0, 7.0, 8.0]]
         )
 
 

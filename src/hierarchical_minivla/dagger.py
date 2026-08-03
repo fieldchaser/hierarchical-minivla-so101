@@ -24,6 +24,8 @@ from .state_policy import GRIPPER_CLOSED, GRIPPER_OPEN, observation_to_feature
 
 WORKSPACE_LOW = np.array([-0.35, 0.25, 0.045])
 WORKSPACE_HIGH = np.array([0.05, 0.80, 0.25])
+REACH_SETTLE_STEPS = 5
+DESCEND_SETTLE_STEPS = 8
 
 
 @dataclass
@@ -32,6 +34,7 @@ class ScriptedRecoveryOracle:
 
     phase: int = 0
     expert_steps_in_phase: int = 0
+    target_settle_steps: int = 0
     lift_target: np.ndarray | None = None
     release_target: np.ndarray | None = None
     grasp_contact_angle: float = float("nan")
@@ -74,16 +77,18 @@ class ScriptedRecoveryOracle:
         bin_xyz = env.get_goal_pos()
         next_phase = self.phase
 
-        if (
-            self.phase == 0
-            and np.linalg.norm(mocap - self.target(env)) < PHASE_POSITION_TOLERANCE
-        ):
-            next_phase = 1
-        elif (
-            self.phase == 1
-            and np.linalg.norm(mocap - self.target(env)) < PHASE_POSITION_TOLERANCE
-        ):
-            next_phase = 2
+        if self.phase in (0, 1):
+            distance = np.linalg.norm(mocap - self.target(env))
+            required_settle_steps = (
+                REACH_SETTLE_STEPS if self.phase == 0 else DESCEND_SETTLE_STEPS
+            )
+            if distance < PHASE_POSITION_TOLERANCE:
+                if self.target_settle_steps >= required_settle_steps:
+                    next_phase = self.phase + 1
+                else:
+                    self.target_settle_steps += 1
+            else:
+                self.target_settle_steps = 0
         elif (
             self.phase == 2
             and self.expert_steps_in_phase >= GRASP_SETTLE_STEPS
@@ -113,6 +118,7 @@ class ScriptedRecoveryOracle:
             return False
         self.phase = next_phase
         self.expert_steps_in_phase = 0
+        self.target_settle_steps = 0
         return True
 
     def note_step(self, expert_executed: bool) -> None:

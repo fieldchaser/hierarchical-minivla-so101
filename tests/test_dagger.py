@@ -5,7 +5,12 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from hierarchical_minivla.dagger import ScriptedRecoveryOracle, run_dagger_episode
+from hierarchical_minivla.dagger import (
+    DESCEND_SETTLE_STEPS,
+    REACH_SETTLE_STEPS,
+    ScriptedRecoveryOracle,
+    run_dagger_episode,
+)
 from hierarchical_minivla.state_policy import GRIPPER_OPEN
 
 
@@ -30,6 +35,33 @@ class DaggerTest(unittest.TestCase):
         self.assertLessEqual(float(np.abs(delta).max()), 0.004)
         self.assertEqual(gripper, GRIPPER_OPEN)
         self.assertEqual(phase, 0)
+
+    def test_recovery_oracle_settles_before_reach_and_descend_transitions(self) -> None:
+        env = FakeEnv()
+        oracle = ScriptedRecoveryOracle()
+        env.data.mocap_pos[0] = oracle.target(env)
+
+        for _ in range(REACH_SETTLE_STEPS):
+            self.assertFalse(oracle.maybe_advance(env))
+        self.assertTrue(oracle.maybe_advance(env))
+        self.assertEqual(oracle.phase, 1)
+
+        env.data.mocap_pos[0] = oracle.target(env)
+        for _ in range(DESCEND_SETTLE_STEPS):
+            self.assertFalse(oracle.maybe_advance(env))
+        self.assertTrue(oracle.maybe_advance(env))
+        self.assertEqual(oracle.phase, 2)
+
+    def test_recovery_oracle_resets_settle_count_after_leaving_target(self) -> None:
+        env = FakeEnv()
+        oracle = ScriptedRecoveryOracle()
+        target = oracle.target(env)
+        env.data.mocap_pos[0] = target
+        self.assertFalse(oracle.maybe_advance(env))
+
+        env.data.mocap_pos[0] = target + np.array([0.01, 0.0, 0.0])
+        self.assertFalse(oracle.maybe_advance(env))
+        self.assertEqual(oracle.target_settle_steps, 0)
 
     def test_negative_grasp_lift_budget_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "learner_grasp_lift_steps"):

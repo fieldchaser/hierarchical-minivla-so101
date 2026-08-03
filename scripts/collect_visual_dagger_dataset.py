@@ -49,6 +49,12 @@ def main() -> None:
     parser.add_argument("--camera", default="front_close")
     parser.add_argument("--render-width", type=int, default=128)
     parser.add_argument("--render-height", type=int, default=128)
+    parser.add_argument(
+        "--colors",
+        nargs="+",
+        choices=("red", "green", "blue"),
+        default=("red", "green", "blue"),
+    )
     parser.add_argument("--device", default="auto")
     parser.add_argument("--min-success-rate", type=float, default=1.0)
     args = parser.parse_args()
@@ -79,7 +85,6 @@ def main() -> None:
         args.checkpoint.expanduser().resolve(), map_location=device
     )
     policy.eval()
-    colors = ("red", "green", "blue")
     attempts = []
     num_successes = 0
     num_saved_steps = 0
@@ -88,9 +93,9 @@ def main() -> None:
     predicted_phase_counts = {name: 0 for name in PHASE_NAMES}
     for episode_index in range(args.episodes):
         seed = args.seed_start + episode_index
-        goal_cube = colors[episode_index % len(colors)]
+        goal_cube = args.colors[episode_index % len(args.colors)]
         instruction_variant = instruction_variant_for_episode(
-            episode_index, len(colors)
+            episode_index, len(args.colors)
         )
         instruction = instruction_for_goal(goal_cube, instruction_variant)
         tokens = encode_instructions([instruction], vocabulary)[0]
@@ -160,6 +165,7 @@ def main() -> None:
             "camera": args.camera,
             "render_width": args.render_width,
             "render_height": args.render_height,
+            "colors": list(args.colors),
             "checkpoint": str(args.checkpoint),
         },
         "num_successes": num_successes,

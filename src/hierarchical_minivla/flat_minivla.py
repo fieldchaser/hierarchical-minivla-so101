@@ -45,7 +45,9 @@ def encode_instructions(
     return encoded
 
 
-def load_vision_episodes(paths: Sequence[str | Path]) -> dict[str, np.ndarray]:
+def load_vision_episodes(
+    paths: Sequence[str | Path], frame_mask_key: str | None = None
+) -> dict[str, np.ndarray]:
     """Load successful RGB episodes into aligned multimodal training arrays."""
     collected: dict[str, list[np.ndarray]] = {
         "rgb": [],
@@ -60,26 +62,47 @@ def load_vision_episodes(paths: Sequence[str | Path]) -> dict[str, np.ndarray]:
             validate_vision_episode_arrays(data)
             if not bool(data["success"]):
                 raise ValueError(f"Vision episode is not successful: {path}")
+            mask: slice | np.ndarray = slice(None)
+            if frame_mask_key is not None:
+                if frame_mask_key not in data:
+                    raise ValueError(
+                        f"Vision episode is missing frame mask {frame_mask_key!r}: "
+                        f"{path}"
+                    )
+                mask = np.asarray(data[frame_mask_key])
+                if mask.dtype != np.bool_ or mask.shape != (len(data["rgb"]),):
+                    raise ValueError(
+                        f"Frame mask {frame_mask_key!r} must be a boolean vector "
+                        f"aligned with the episode: {path}"
+                    )
+                if not mask.any():
+                    continue
             proprio = np.concatenate(
                 [
-                    data["state_ee_xyz"],
-                    data["state_mocap_xyz"],
-                    data["state_joints"],
-                    data["state_gripper"],
+                    data["state_ee_xyz"][mask],
+                    data["state_mocap_xyz"][mask],
+                    data["state_joints"][mask],
+                    data["state_gripper"][mask],
                 ],
                 axis=1,
             ).astype(np.float32)
             if proprio.shape[1] != PROPRIO_DIM:
                 raise ValueError(f"Expected {PROPRIO_DIM} proprioceptive values")
-            collected["rgb"].append(np.asarray(data["rgb"], dtype=np.uint8))
+            collected["rgb"].append(np.asarray(data["rgb"][mask], dtype=np.uint8))
             collected["proprio"].append(proprio)
-            collected["instruction"].append(np.asarray(data["instruction"]).astype(str))
-            collected["delta"].append(
-                np.asarray(data["action_ee_xyz"], dtype=np.float32)
+            collected["instruction"].append(
+                np.asarray(data["instruction"][mask]).astype(str)
             )
-            gripper = np.asarray(data["action_gripper"], dtype=np.float32)[:, 0]
+            collected["delta"].append(
+                np.asarray(data["action_ee_xyz"][mask], dtype=np.float32)
+            )
+            gripper = np.asarray(
+                data["action_gripper"][mask], dtype=np.float32
+            )[:, 0]
             collected["gripper_open"].append((gripper > 0.4).astype(np.float32))
-            collected["phase"].append(np.asarray(data["phase"], dtype=np.int64))
+            collected["phase"].append(
+                np.asarray(data["phase"][mask], dtype=np.int64)
+            )
     if not collected["rgb"]:
         raise ValueError("No vision episodes were provided")
     return {key: np.concatenate(values) for key, values in collected.items()}

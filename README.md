@@ -2,20 +2,21 @@
 
 A simulation-first research project for language-conditioned, multi-task robotic manipulation. The long-term question is whether explicit skill phases improve data efficiency and generalization over a flat vision-language-action policy.
 
-## Current milestone: first complete visual closed-loop rollout
+## Current milestone: Visual DAgger begins correcting layout generalization
 
-Visual DAgger Round 2 and explicit skill-termination gates produce the first
-complete RGB-language-proprioception rollout on seen seed 1609. The policy
-reaches, grasps, lifts, transports, and releases the red cube into the bin in
-399 steps. Learned phase votes advance grasp-to-lift and lift-to-transport;
-action-convergence gates terminate reach, descend, and transport when their
-Cartesian commands settle near zero. These gates use policy outputs and phase
-history, not simulator object coordinates.
+The fixed Round-2 controller scores 0/3 on the first red/green/blue layouts
+outside its training seeds. Its reach head drives all goals toward a familiar
+central Y position, exposing target-localization failure rather than a phase
+gate problem. Visual DAgger Round 3 adds 176 expert corrections on those
+learner-visited states and turns the red replay from failure into a complete
+223-step rollout. Green and blue still fail before lift, so the result is 1/3
+on correction replay and is not an unseen-generalization claim.
 
-This is a `1/1` seen-layout integration result, not a generalization claim.
-Milestone 20 records the raw failure, three gate ablations, fixed held-out
-metrics, and the exact successful command before evaluation expands to unseen
-layouts and instruction paraphrases.
+Milestone 21 also fixes missing physical settle time in the recovery oracle and
+compares full successful DAgger trajectories against correction-only sampling.
+The full trajectories retain the sole physical success; correction-only falls
+to 0/3. The project therefore keeps both offline and closed-loop metrics instead
+of selecting a checkpoint from either view alone.
 
 Milestone 0 began with the smallest useful symbolic contract:
 
@@ -88,6 +89,9 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Aggregate policy-visited RGB corrections with visual DAgger round 1
 - [x] Target the visual reach-to-descend boundary in DAgger round 2
 - [x] Add history-aware skill termination and complete a seen visual rollout
+- [x] Run the first three-color unseen-layout closed-loop smoke test
+- [x] Aggregate Visual DAgger corrections from failed layouts
+- [x] Compare full-trajectory and correction-only DAgger sampling
 - [ ] Evaluate unseen layouts and instruction paraphrases
 
 ## Upstream attribution and licensing boundary
@@ -1313,3 +1317,93 @@ visual closed loop. It does not establish robustness: seed 1609 is part of the
 training split, and the convergence thresholds were diagnosed on this rollout.
 The next experiment must keep these settings fixed and report performance on
 unseen seeds, all three colors, and held-out instruction paraphrases.
+
+## Milestone 21: first layout-generalization DAgger round
+
+The Round-2 checkpoint and fixed convergence thresholds are first evaluated on
+seeds 1700-1702, which were absent from every training directory at evaluation
+time. The three episodes request red, green, and blue respectively. All issue a
+close command, but none physically lifts its target:
+
+| Initial unseen rollout | Closest reach target | Closest grasp target | Milestone | Success |
+|---|---:|---:|---|---:|
+| Seed 1700, red | 4.65 mm | 65.87 mm | Close command | 0/1 |
+| Seed 1701, green | 3.33 mm | 58.77 mm | Close command | 0/1 |
+| Seed 1702, blue | 150.88 mm | 160.68 mm | Close command | 0/1 |
+
+Red and green briefly pass near the correct reach position but continue in
+positive Y before the controller advances. Blue starts on the opposite side of
+the workspace, yet the policy moves toward the same central Y region. This is
+a language-conditioned visual localization failure: later controller phases
+advance consistently around the wrong object-space position, so changing the
+convergence thresholds cannot repair it.
+
+Visual DAgger Round 3 queries the expert on those policy-visited reach states.
+The first collection saves successful red and green trajectories but cannot
+recover the blue episode, even after reducing learner control to 40 steps and
+allowing 1,200 total steps. A pure scripted expert completes the same blue seed
+in 276 steps, isolating the failure to `ScriptedRecoveryOracle` rather than the
+scene.
+
+The original expert holds for five physics steps above the cube and eight steps
+at the grasp pose, allowing the physical end effector to catch up with the mocap
+command. The recovery oracle previously changed phase as soon as mocap entered
+a 4 mm tolerance. It now requires the same consecutive settle steps and resets
+the counter after leaving the target. The collector also accepts `--colors`, so
+a failed color can be retried without duplicating other episodes. After this
+fix, the blue recovery succeeds in 270 steps with 40 learner states.
+
+The three saved trajectories contain 660 total frames and 176 learner-visited
+states. Their mean expert-versus-learner Cartesian disagreements are 6.91 mm
+for red, 3.00 mm for green, and 5.71 mm for blue. These corrections are added
+only to training; the same nine original episodes remain the validation set.
+
+Full-trajectory Round 3 trains on 56 episodes and 12,874 frames. It selects
+epoch 17. The targeted behavior improves, although fixed held-out metrics
+regress relative to Round 2:
+
+| Fixed held-out metric | Round 2 | Round 3 full trajectories |
+|---|---:|---:|
+| Phase accuracy | **95.93%** | 95.61% |
+| Teacher-routed action MAE | **0.320 mm** | 0.386 mm |
+| Autonomous-routed action MAE | **0.368 mm** | 0.452 mm |
+| Autonomous reach MAE | **0.692 mm** | 0.936 mm |
+
+After aggregation, seeds 1700-1702 are training-visited correction replays and
+must no longer be described as unseen evaluation. Round 3 completes the red
+task in 223 steps but still closes away from green and blue:
+
+| Correction replay | Round-2 success | Round-3 success | Round-3 reach | Round-3 grasp |
+|---|---:|---:|---:|---:|
+| Seed 1700, red | 0/1 | **1/1** | 1.34 mm | 2.38 mm |
+| Seed 1701, green | 0/1 | 0/1 | 2.23 mm | 57.48 mm |
+| Seed 1702, blue | 0/1 | 0/1 | 125.13 mm | 140.16 mm |
+
+The red trajectory closes at step 46, lifts at step 169, aligns over the bin at
+step 205, and releases successfully at step 223. Blue improves by 25.75 mm at
+the reach target but remains far outside grasp range. The 1/3 result proves
+that on-policy corrections can change closed-loop behavior, not that layout or
+color generalization is solved.
+
+The trainer also supports `--dagger-train-dir`, which keeps only frames where
+the saved `dagger` mask is true. This correction-only control uses 319 learner
+frames from Visual DAgger R1-R3, while base and recovery episodes remain full.
+It trains on 12,146 frames and slightly improves over full Round 3 offline, but
+still trails Round 2:
+
+| Sampling strategy | Autonomous MAE | Reach MAE | Replay success |
+|---|---:|---:|---:|
+| Round 2 before new layouts | **0.368 mm** | **0.692 mm** | 0/3 |
+| Round 3 full successful trajectories | 0.452 mm | 0.936 mm | **1/3** |
+| Round 3 correction-only | 0.441 mm | 0.895 mm | 0/3 |
+
+Correction-only reaches within 1.13 mm of the red grasp target but releases the
+cube before a physical lift. Removing all expert-takeover context therefore
+does not preserve the successful downstream behavior. The option is retained
+as a reproducible negative control; the full Round-3 checkpoint remains the
+behavioral model for the next DAgger collection.
+
+The next round should collect fresh green and blue corrections using the
+settle-aware oracle and the updated learner, then evaluate on new seeds that
+have never entered any DAgger directory. Instruction paraphrases remain a
+separate held-out axis and are not claimed by this milestone.

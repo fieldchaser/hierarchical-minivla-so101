@@ -200,6 +200,9 @@ def main() -> None:
     parser.add_argument(
         "--extra-train-dir", type=Path, action="append", default=[]
     )
+    parser.add_argument(
+        "--dagger-train-dir", type=Path, action="append", default=[]
+    )
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
@@ -232,13 +235,33 @@ def main() -> None:
         if not directory_paths:
             parser.error("--extra-train-dir contains no episode_*.npz files")
         extra_train_paths.extend(directory_paths)
-    if len(set(extra_train_paths)) != len(extra_train_paths):
-        parser.error("--extra-train-dir directories contain duplicate episodes")
-    overlap = set(paths) & set(extra_train_paths)
+    dagger_train_paths = []
+    for dagger_train_dir in args.dagger_train_dir:
+        directory_paths = sorted(
+            dagger_train_dir.expanduser().resolve().glob("episode_*.npz")
+        )
+        if not directory_paths:
+            parser.error("--dagger-train-dir contains no episode_*.npz files")
+        dagger_train_paths.extend(directory_paths)
+    additional_paths = extra_train_paths + dagger_train_paths
+    if len(set(additional_paths)) != len(additional_paths):
+        parser.error("Additional training directories contain duplicate episodes")
+    overlap = set(paths) & set(additional_paths)
     if overlap:
-        parser.error("--extra-train-dir overlaps the base dataset")
-    train_paths = base_train_paths + extra_train_paths
-    train_arrays = load_vision_episodes(train_paths)
+        parser.error("Additional training directories overlap the base dataset")
+    full_train_paths = base_train_paths + extra_train_paths
+    train_paths = full_train_paths + dagger_train_paths
+    train_arrays = load_vision_episodes(full_train_paths)
+    num_dagger_train_frames = 0
+    if dagger_train_paths:
+        dagger_arrays = load_vision_episodes(
+            dagger_train_paths, frame_mask_key="dagger"
+        )
+        num_dagger_train_frames = len(dagger_arrays["rgb"])
+        train_arrays = {
+            key: np.concatenate([train_arrays[key], dagger_arrays[key]])
+            for key in train_arrays
+        }
     validation_arrays = load_vision_episodes(validation_paths)
     vocabulary = build_vocabulary(train_arrays["instruction"].tolist())
     train_dataset = make_dataset(train_arrays, vocabulary)
@@ -331,7 +354,10 @@ def main() -> None:
         "num_parameters": sum(parameter.numel() for parameter in policy.parameters()),
         "num_base_episodes": len(paths),
         "num_base_train_episodes": len(base_train_paths),
-        "num_extra_train_episodes": len(extra_train_paths),
+        "num_extra_train_episodes": len(additional_paths),
+        "num_full_extra_train_episodes": len(extra_train_paths),
+        "num_dagger_train_episodes": len(dagger_train_paths),
+        "num_dagger_train_frames": num_dagger_train_frames,
         "num_train_episodes": len(train_paths),
         "num_validation_episodes": len(validation_paths),
         "num_train_frames": len(train_dataset),
@@ -356,7 +382,9 @@ def main() -> None:
         "validation": validation_metrics,
         "history": history,
         "train_episodes": [path.name for path in train_paths],
-        "extra_train_episodes": [path.name for path in extra_train_paths],
+        "extra_train_episodes": [path.name for path in additional_paths],
+        "full_extra_train_episodes": [path.name for path in extra_train_paths],
+        "dagger_train_episodes": [path.name for path in dagger_train_paths],
         "validation_episodes": [path.name for path in validation_paths],
         "instruction_frame_counts": {
             str(instruction): int(count)
