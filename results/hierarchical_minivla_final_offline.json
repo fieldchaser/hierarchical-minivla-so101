@@ -1,0 +1,570 @@
+{
+  "device": "cpu",
+  "num_parameters": 111486,
+  "num_base_episodes": 30,
+  "num_base_train_episodes": 21,
+  "num_extra_train_episodes": 37,
+  "num_full_extra_train_episodes": 37,
+  "num_dagger_train_episodes": 0,
+  "num_dagger_train_frames": 0,
+  "num_train_episodes": 58,
+  "num_validation_episodes": 9,
+  "num_train_frames": 13417,
+  "num_validation_frames": 2139,
+  "num_unique_train_instructions": 9,
+  "num_unique_validation_instructions": 9,
+  "phase_weights": {
+    "reach": 0.8721398711204529,
+    "descend": 1.5201677083969116,
+    "grasp": 1.2851532697677612,
+    "lift": 1.226641058921814,
+    "transport": 0.6370845437049866,
+    "release": 0.9684567451477051
+  },
+  "train_phase_counts": {
+    "reach": 2564,
+    "descend": 1471,
+    "grasp": 1740,
+    "lift": 1823,
+    "transport": 3510,
+    "release": 2309
+  },
+  "epochs": 30,
+  "best_epoch": 6,
+  "batch_size": 64,
+  "learning_rate": 0.001,
+  "train": {
+    "loss": 0.4065190531995603,
+    "delta_loss": 0.25085849737795846,
+    "gripper_loss": 2.5241894800933054e-05,
+    "phase_loss": 0.15563531392680088,
+    "phase_accuracy": 0.9526719833047627,
+    "teacher_routed": {
+      "delta_mae_mm": 0.4026052386094554,
+      "gripper_accuracy": 1.0
+    },
+    "autonomous_routed": {
+      "delta_mae_mm": 0.46476709279787726,
+      "gripper_accuracy": 0.99038533204144
+    },
+    "per_phase": {
+      "reach": {
+        "count": 2564,
+        "phase_accuracy": 0.9793291731669267,
+        "teacher_delta_mae_mm": 0.9862063108440691,
+        "teacher_gripper_accuracy": 1.0,
+        "autonomous_delta_mae_mm": 1.0479341405593983,
+        "autonomous_gripper_accuracy": 1.0
+      },
+      "descend": {
+        "count": 1471,
+        "phase_accuracy": 0.929299796057104,
+        "teacher_delta_mae_mm": 0.24379961487115165,
+        "teacher_gripper_accuracy": 1.0,
+        "autonomous_delta_mae_mm": 0.37577434619631195,
+        "autonomous_gripper_accuracy": 1.0
+      },
+      "grasp": {
+        "count": 1740,
+        "phase_accuracy": 0.9626436781609196,
+        "teacher_delta_mae_mm": 0.11136651020613053,
+        "teacher_gripper_accuracy": 1.0,
+        "autonomous_delta_mae_mm": 0.11621558470285757,
+        "autonomous_gripper_accuracy": 0.9626436781609196
+      },
+      "lift": {
+        "count": 1823,
+        "phase_accuracy": 0.9051014810751509,
+        "teacher_delta_mae_mm": 0.4083567613795908,
+        "teacher_gripper_accuracy": 1.0,
+        "autonomous_delta_mae_mm": 0.5137980022002948,
+        "autonomous_gripper_accuracy": 1.0
+      },
+      "transport": {
+        "count": 3510,
+        "phase_accuracy": 0.9498575498575499,
+        "teacher_delta_mae_mm": 0.40834502997123373,
+        "teacher_gripper_accuracy": 1.0,
+        "autonomous_delta_mae_mm": 0.48185014155296896,
+        "autonomous_gripper_accuracy": 1.0
+      },
+      "release": {
+        "count": 2309,
+        "phase_accuracy": 0.9722823733217844,
+        "teacher_delta_mae_mm": 0.06192685707696592,
+        "teacher_gripper_accuracy": 1.0,
+        "autonomous_delta_mae_mm": 0.07187094507363233,
+        "autonomous_gripper_accuracy": 0.9722823733217844
+      }
+    }
+  },
+  "validation": {
+    "loss": 0.3768378166067997,
+    "delta_loss": 0.2227065324578977,
+    "gripper_loss": 3.238034654881811e-05,
+    "phase_loss": 0.15409890380235317,
+    "phase_accuracy": 0.9551192145862553,
+    "teacher_routed": {
+      "delta_mae_mm": 0.4326217759599657,
+      "gripper_accuracy": 1.0
+    },
+    "autonomous_routed": {
+      "delta_mae_mm": 0.4885355739925246,
+      "gripper_accuracy": 0.9906498363721365
+    },
+    "per_phase": {
+      "reach": {
+        "count": 371,
+        "phase_accuracy": 1.0,
+        "teacher_delta_mae_mm": 1.0942349750933515,
+        "teacher_gripper_accuracy": 1.0,
+        "autonomous_delta_mae_mm": 1.0942349750933515,
+        "autonomous_gripper_accuracy": 1.0
+      },
+      "descend": {
+        "count": 234,
+        "phase_accuracy": 0.9188034188034188,
+        "teacher_delta_mae_mm": 0.27395605074475254,
+        "teacher_gripper_accuracy": 1.0,
+        "autonomous_delta_mae_mm": 0.44606786411642985,
+        "autonomous_gripper_accuracy": 1.0
+      },
+      "grasp": {
+        "count": 270,
+        "phase_accuracy": 0.9629629629629629,
+        "teacher_delta_mae_mm": 0.10599866825627324,
+        "teacher_gripper_accuracy": 1.0,
+        "autonomous_delta_mae_mm": 0.11233972100954917,
+        "autonomous_gripper_accuracy": 0.9629629629629629
+      },
+      "lift": {
+        "count": 279,
+        "phase_accuracy": 0.899641577060932,
+        "teacher_delta_mae_mm": 0.34988816451863247,
+        "teacher_gripper_accuracy": 1.0,
+        "autonomous_delta_mae_mm": 0.4592511097465507,
+        "autonomous_gripper_accuracy": 1.0
+      },
+      "transport": {
+        "count": 580,
+        "phase_accuracy": 0.95,
+        "teacher_delta_mae_mm": 0.5166683577525634,
+        "teacher_gripper_accuracy": 1.0,
+        "autonomous_delta_mae_mm": 0.5928371777361923,
+        "autonomous_gripper_accuracy": 1.0
+      },
+      "release": {
+        "count": 405,
+        "phase_accuracy": 0.9753086419753086,
+        "teacher_delta_mae_mm": 0.07260494152612892,
+        "teacher_gripper_accuracy": 1.0,
+        "autonomous_delta_mae_mm": 0.0798226899463576,
+        "autonomous_gripper_accuracy": 0.9753086419753086
+      }
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.6287161317340413,
+      "validation_loss": 0.7916261187258111,
+      "validation_phase_accuracy": 0.8798503973819541,
+      "validation_teacher_delta_mae_mm": 0.6716426736908868,
+      "validation_autonomous_delta_mae_mm": 0.7646392945579584
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.8118469083709885,
+      "validation_loss": 0.6464388305958639,
+      "validation_phase_accuracy": 0.8920056100981767,
+      "validation_teacher_delta_mae_mm": 0.5582960711312299,
+      "validation_autonomous_delta_mae_mm": 0.7032440056685038
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.6405752703615225,
+      "validation_loss": 0.4948833202783238,
+      "validation_phase_accuracy": 0.9270687237026648,
+      "validation_teacher_delta_mae_mm": 0.4580220817967794,
+      "validation_autonomous_delta_mae_mm": 0.561874295497487
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.5451770274198614,
+      "validation_loss": 0.4791562402317488,
+      "validation_phase_accuracy": 0.9336138382421693,
+      "validation_teacher_delta_mae_mm": 0.4832169715509873,
+      "validation_autonomous_delta_mae_mm": 0.5614837313994524
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.4843700064572899,
+      "validation_loss": 0.4087714779276749,
+      "validation_phase_accuracy": 0.9509116409537167,
+      "validation_teacher_delta_mae_mm": 0.43947683931174514,
+      "validation_autonomous_delta_mae_mm": 0.493465544482049
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.4429169530603581,
+      "validation_loss": 0.3768378166067997,
+      "validation_phase_accuracy": 0.9551192145862553,
+      "validation_teacher_delta_mae_mm": 0.4326217759599657,
+      "validation_autonomous_delta_mae_mm": 0.4885355739925246
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.4032958925010249,
+      "validation_loss": 0.4227057089539409,
+      "validation_phase_accuracy": 0.9574567554932212,
+      "validation_teacher_delta_mae_mm": 0.4349061132392569,
+      "validation_autonomous_delta_mae_mm": 0.4866507941307214
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.3724399814176037,
+      "validation_loss": 0.4057345845018474,
+      "validation_phase_accuracy": 0.9588592800374006,
+      "validation_teacher_delta_mae_mm": 0.4249920367136411,
+      "validation_autonomous_delta_mae_mm": 0.47154157953563247
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.3476652699504141,
+      "validation_loss": 0.40001154704866454,
+      "validation_phase_accuracy": 0.9574567554932212,
+      "validation_teacher_delta_mae_mm": 0.42345332937387925,
+      "validation_autonomous_delta_mae_mm": 0.49351449807731673
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.3325840621073822,
+      "validation_loss": 0.43174414679907425,
+      "validation_phase_accuracy": 0.9546517064048621,
+      "validation_teacher_delta_mae_mm": 0.42707401748621965,
+      "validation_autonomous_delta_mae_mm": 0.49606879053707637
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.31040630447773015,
+      "validation_loss": 0.42204290186240434,
+      "validation_phase_accuracy": 0.9546517064048621,
+      "validation_teacher_delta_mae_mm": 0.43293937864405035,
+      "validation_autonomous_delta_mae_mm": 0.5037679160500719
+    },
+    {
+      "epoch": 12,
+      "train_loss": 0.2990903251615537,
+      "validation_loss": 0.4396160141378601,
+      "validation_phase_accuracy": 0.9565217391304348,
+      "validation_teacher_delta_mae_mm": 0.4298127585986752,
+      "validation_autonomous_delta_mae_mm": 0.5007791314214568
+    },
+    {
+      "epoch": 13,
+      "train_loss": 0.2873413885664618,
+      "validation_loss": 0.4044352420953825,
+      "validation_phase_accuracy": 0.9635343618513323,
+      "validation_teacher_delta_mae_mm": 0.4302098949012986,
+      "validation_autonomous_delta_mae_mm": 0.4752475868433642
+    },
+    {
+      "epoch": 14,
+      "train_loss": 0.2799531070079179,
+      "validation_loss": 0.4240614386799726,
+      "validation_phase_accuracy": 0.9555867227676484,
+      "validation_teacher_delta_mae_mm": 0.46599435919475024,
+      "validation_autonomous_delta_mae_mm": 0.5344979603601339
+    },
+    {
+      "epoch": 15,
+      "train_loss": 0.27113124387076515,
+      "validation_loss": 0.4549066070844592,
+      "validation_phase_accuracy": 0.9560542309490416,
+      "validation_teacher_delta_mae_mm": 0.43533876249206743,
+      "validation_autonomous_delta_mae_mm": 0.5109226075951686
+    },
+    {
+      "epoch": 16,
+      "train_loss": 0.2604606171505297,
+      "validation_loss": 0.4101157125129212,
+      "validation_phase_accuracy": 0.9565217391304348,
+      "validation_teacher_delta_mae_mm": 0.39170261427962005,
+      "validation_autonomous_delta_mae_mm": 0.4583829261716098
+    },
+    {
+      "epoch": 17,
+      "train_loss": 0.25610350086710854,
+      "validation_loss": 0.40252152620766357,
+      "validation_phase_accuracy": 0.9541841982234689,
+      "validation_teacher_delta_mae_mm": 0.41881696219131953,
+      "validation_autonomous_delta_mae_mm": 0.48339026334983026
+    },
+    {
+      "epoch": 18,
+      "train_loss": 0.25085642249704854,
+      "validation_loss": 0.45054657961162303,
+      "validation_phase_accuracy": 0.9551192145862553,
+      "validation_teacher_delta_mae_mm": 0.4274160168745777,
+      "validation_autonomous_delta_mae_mm": 0.5013093152069669
+    },
+    {
+      "epoch": 19,
+      "train_loss": 0.24376794895321172,
+      "validation_loss": 0.3988589077586955,
+      "validation_phase_accuracy": 0.9574567554932212,
+      "validation_teacher_delta_mae_mm": 0.40910909790611016,
+      "validation_autonomous_delta_mae_mm": 0.4710816775140356
+    },
+    {
+      "epoch": 20,
+      "train_loss": 0.24180015324968743,
+      "validation_loss": 0.4210447160464267,
+      "validation_phase_accuracy": 0.9583917718560074,
+      "validation_teacher_delta_mae_mm": 0.4079574682787978,
+      "validation_autonomous_delta_mae_mm": 0.47162104236297003
+    },
+    {
+      "epoch": 21,
+      "train_loss": 0.2291540004523454,
+      "validation_loss": 0.4542286562025257,
+      "validation_phase_accuracy": 0.9509116409537167,
+      "validation_teacher_delta_mae_mm": 0.42615980778703105,
+      "validation_autonomous_delta_mae_mm": 0.49451181704575536
+    },
+    {
+      "epoch": 22,
+      "train_loss": 0.22726052085291285,
+      "validation_loss": 0.4307989464249753,
+      "validation_phase_accuracy": 0.9583917718560074,
+      "validation_teacher_delta_mae_mm": 0.4197440256695693,
+      "validation_autonomous_delta_mae_mm": 0.4860696863203887
+    },
+    {
+      "epoch": 23,
+      "train_loss": 0.22325601580735246,
+      "validation_loss": 0.4125075743446218,
+      "validation_phase_accuracy": 0.9588592800374006,
+      "validation_teacher_delta_mae_mm": 0.4050859132941925,
+      "validation_autonomous_delta_mae_mm": 0.4653255038526291
+    },
+    {
+      "epoch": 24,
+      "train_loss": 0.2141977212903858,
+      "validation_loss": 0.4331166923450954,
+      "validation_phase_accuracy": 0.9625993454885461,
+      "validation_teacher_delta_mae_mm": 0.39685455776101713,
+      "validation_autonomous_delta_mae_mm": 0.45414769755025025
+    },
+    {
+      "epoch": 25,
+      "train_loss": 0.21094940863885672,
+      "validation_loss": 0.4312798029242562,
+      "validation_phase_accuracy": 0.9621318373071529,
+      "validation_teacher_delta_mae_mm": 0.4050816385642124,
+      "validation_autonomous_delta_mae_mm": 0.4615705893198279
+    },
+    {
+      "epoch": 26,
+      "train_loss": 0.20844987253034097,
+      "validation_loss": 0.45567339911622107,
+      "validation_phase_accuracy": 0.9579242636746143,
+      "validation_teacher_delta_mae_mm": 0.40849770207458913,
+      "validation_autonomous_delta_mae_mm": 0.47305479716626847
+    },
+    {
+      "epoch": 27,
+      "train_loss": 0.19947526353437267,
+      "validation_loss": 0.49333295714049535,
+      "validation_phase_accuracy": 0.9583917718560074,
+      "validation_teacher_delta_mae_mm": 0.41479654909223024,
+      "validation_autonomous_delta_mae_mm": 0.4776668636311828
+    },
+    {
+      "epoch": 28,
+      "train_loss": 0.20165196944075617,
+      "validation_loss": 0.5040275605058732,
+      "validation_phase_accuracy": 0.949041608228144,
+      "validation_teacher_delta_mae_mm": 0.42517982466011084,
+      "validation_autonomous_delta_mae_mm": 0.5015248207217792
+    },
+    {
+      "epoch": 29,
+      "train_loss": 0.1972458358631099,
+      "validation_loss": 0.4735880825276553,
+      "validation_phase_accuracy": 0.9593267882187938,
+      "validation_teacher_delta_mae_mm": 0.42596931206861394,
+      "validation_autonomous_delta_mae_mm": 0.4929263045160773
+    },
+    {
+      "epoch": 30,
+      "train_loss": 0.19457206164095978,
+      "validation_loss": 0.5040627630652968,
+      "validation_phase_accuracy": 0.949041608228144,
+      "validation_teacher_delta_mae_mm": 0.4108229757668164,
+      "validation_autonomous_delta_mae_mm": 0.4939315212173256
+    }
+  ],
+  "train_episodes": [
+    "episode_0006_seed_1606_red.npz",
+    "episode_0007_seed_1607_green.npz",
+    "episode_0008_seed_1608_blue.npz",
+    "episode_0009_seed_1609_red.npz",
+    "episode_0010_seed_1610_green.npz",
+    "episode_0011_seed_1611_blue.npz",
+    "episode_0012_seed_1612_red.npz",
+    "episode_0013_seed_1613_green.npz",
+    "episode_0014_seed_1614_blue.npz",
+    "episode_0017_seed_1617_blue.npz",
+    "episode_0018_seed_1618_red.npz",
+    "episode_0019_seed_1619_green.npz",
+    "episode_0020_seed_1620_blue.npz",
+    "episode_0021_seed_1621_red.npz",
+    "episode_0022_seed_1622_green.npz",
+    "episode_0023_seed_1623_blue.npz",
+    "episode_0024_seed_1624_red.npz",
+    "episode_0025_seed_1625_green.npz",
+    "episode_0027_seed_1627_red.npz",
+    "episode_0028_seed_1628_green.npz",
+    "episode_0029_seed_1629_blue.npz",
+    "episode_0000_seed_1800_red.npz",
+    "episode_0001_seed_1801_green.npz",
+    "episode_0002_seed_1802_blue.npz",
+    "episode_0003_seed_1803_red.npz",
+    "episode_0004_seed_1804_green.npz",
+    "episode_0005_seed_1805_blue.npz",
+    "episode_0006_seed_1806_red.npz",
+    "episode_0007_seed_1807_green.npz",
+    "episode_0008_seed_1808_blue.npz",
+    "episode_0009_seed_1809_red.npz",
+    "episode_0010_seed_1810_green.npz",
+    "episode_0011_seed_1811_blue.npz",
+    "episode_0012_seed_1812_red.npz",
+    "episode_0013_seed_1813_green.npz",
+    "episode_0014_seed_1814_blue.npz",
+    "episode_0015_seed_1815_red.npz",
+    "episode_0016_seed_1816_green.npz",
+    "episode_0017_seed_1817_blue.npz",
+    "episode_0018_seed_1818_red.npz",
+    "episode_0019_seed_1819_green.npz",
+    "episode_0020_seed_1820_blue.npz",
+    "episode_0021_seed_1821_red.npz",
+    "episode_0022_seed_1822_green.npz",
+    "episode_0023_seed_1823_blue.npz",
+    "episode_0024_seed_1824_red.npz",
+    "episode_0025_seed_1825_green.npz",
+    "episode_0026_seed_1826_blue.npz",
+    "episode_0027_seed_1827_red.npz",
+    "episode_0028_seed_1828_green.npz",
+    "episode_0029_seed_1829_blue.npz",
+    "episode_0000_seed_1609_red.npz",
+    "episode_0000_seed_1609_red.npz",
+    "episode_0000_seed_1700_red.npz",
+    "episode_0001_seed_1701_green.npz",
+    "episode_0000_seed_1702_blue.npz",
+    "episode_0000_seed_1701_green.npz",
+    "episode_0001_seed_1702_blue.npz"
+  ],
+  "extra_train_episodes": [
+    "episode_0000_seed_1800_red.npz",
+    "episode_0001_seed_1801_green.npz",
+    "episode_0002_seed_1802_blue.npz",
+    "episode_0003_seed_1803_red.npz",
+    "episode_0004_seed_1804_green.npz",
+    "episode_0005_seed_1805_blue.npz",
+    "episode_0006_seed_1806_red.npz",
+    "episode_0007_seed_1807_green.npz",
+    "episode_0008_seed_1808_blue.npz",
+    "episode_0009_seed_1809_red.npz",
+    "episode_0010_seed_1810_green.npz",
+    "episode_0011_seed_1811_blue.npz",
+    "episode_0012_seed_1812_red.npz",
+    "episode_0013_seed_1813_green.npz",
+    "episode_0014_seed_1814_blue.npz",
+    "episode_0015_seed_1815_red.npz",
+    "episode_0016_seed_1816_green.npz",
+    "episode_0017_seed_1817_blue.npz",
+    "episode_0018_seed_1818_red.npz",
+    "episode_0019_seed_1819_green.npz",
+    "episode_0020_seed_1820_blue.npz",
+    "episode_0021_seed_1821_red.npz",
+    "episode_0022_seed_1822_green.npz",
+    "episode_0023_seed_1823_blue.npz",
+    "episode_0024_seed_1824_red.npz",
+    "episode_0025_seed_1825_green.npz",
+    "episode_0026_seed_1826_blue.npz",
+    "episode_0027_seed_1827_red.npz",
+    "episode_0028_seed_1828_green.npz",
+    "episode_0029_seed_1829_blue.npz",
+    "episode_0000_seed_1609_red.npz",
+    "episode_0000_seed_1609_red.npz",
+    "episode_0000_seed_1700_red.npz",
+    "episode_0001_seed_1701_green.npz",
+    "episode_0000_seed_1702_blue.npz",
+    "episode_0000_seed_1701_green.npz",
+    "episode_0001_seed_1702_blue.npz"
+  ],
+  "full_extra_train_episodes": [
+    "episode_0000_seed_1800_red.npz",
+    "episode_0001_seed_1801_green.npz",
+    "episode_0002_seed_1802_blue.npz",
+    "episode_0003_seed_1803_red.npz",
+    "episode_0004_seed_1804_green.npz",
+    "episode_0005_seed_1805_blue.npz",
+    "episode_0006_seed_1806_red.npz",
+    "episode_0007_seed_1807_green.npz",
+    "episode_0008_seed_1808_blue.npz",
+    "episode_0009_seed_1809_red.npz",
+    "episode_0010_seed_1810_green.npz",
+    "episode_0011_seed_1811_blue.npz",
+    "episode_0012_seed_1812_red.npz",
+    "episode_0013_seed_1813_green.npz",
+    "episode_0014_seed_1814_blue.npz",
+    "episode_0015_seed_1815_red.npz",
+    "episode_0016_seed_1816_green.npz",
+    "episode_0017_seed_1817_blue.npz",
+    "episode_0018_seed_1818_red.npz",
+    "episode_0019_seed_1819_green.npz",
+    "episode_0020_seed_1820_blue.npz",
+    "episode_0021_seed_1821_red.npz",
+    "episode_0022_seed_1822_green.npz",
+    "episode_0023_seed_1823_blue.npz",
+    "episode_0024_seed_1824_red.npz",
+    "episode_0025_seed_1825_green.npz",
+    "episode_0026_seed_1826_blue.npz",
+    "episode_0027_seed_1827_red.npz",
+    "episode_0028_seed_1828_green.npz",
+    "episode_0029_seed_1829_blue.npz",
+    "episode_0000_seed_1609_red.npz",
+    "episode_0000_seed_1609_red.npz",
+    "episode_0000_seed_1700_red.npz",
+    "episode_0001_seed_1701_green.npz",
+    "episode_0000_seed_1702_blue.npz",
+    "episode_0000_seed_1701_green.npz",
+    "episode_0001_seed_1702_blue.npz"
+  ],
+  "dagger_train_episodes": [],
+  "validation_episodes": [
+    "episode_0000_seed_1600_red.npz",
+    "episode_0001_seed_1601_green.npz",
+    "episode_0002_seed_1602_blue.npz",
+    "episode_0003_seed_1603_red.npz",
+    "episode_0004_seed_1604_green.npz",
+    "episode_0005_seed_1605_blue.npz",
+    "episode_0015_seed_1615_red.npz",
+    "episode_0016_seed_1616_green.npz",
+    "episode_0026_seed_1626_blue.npz"
+  ],
+  "instruction_frame_counts": {
+    "Grasp the red object and put it in the box.": 1169,
+    "Grasp the green object and put it in the box.": 1195,
+    "Grasp the blue object and put it in the box.": 1024,
+    "Pick up the red cube and place it in the bin.": 2241,
+    "Pick up the green cube and place it in the bin.": 2058,
+    "Pick up the blue cube and place it in the bin.": 2251,
+    "Move the red block into the container.": 1212,
+    "Move the green block into the container.": 1129,
+    "Move the blue block into the container.": 1138
+  },
+  "checkpoint": "checkpoints/hierarchical_minivla_final.pt"
+}

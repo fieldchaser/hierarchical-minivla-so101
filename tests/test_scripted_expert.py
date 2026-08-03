@@ -4,13 +4,20 @@ import unittest
 
 import numpy as np
 
+from hierarchical_minivla.flat_minivla import (
+    UNK_TOKEN,
+    build_vocabulary,
+    encode_instructions,
+)
 from hierarchical_minivla.scripted_expert import (
     INSTRUCTION_TEMPLATES,
+    PARAPHRASE_TEMPLATES,
     PHASE_NAMES,
     bounded_delta,
     instruction_for_goal,
     instruction_variant_for_episode,
     is_released_in_bin,
+    paraphrased_instruction_for_goal,
     run_scripted_episode,
 )
 
@@ -60,6 +67,23 @@ class ScriptedExpertTest(unittest.TestCase):
                 for instructions in instructions_by_color.values()
             )
         )
+
+    def test_paraphrases_are_unseen_but_use_training_vocabulary(self) -> None:
+        colors = ("red", "green", "blue")
+        training = [
+            instruction_for_goal(color, variant)
+            for color in colors
+            for variant in range(len(INSTRUCTION_TEMPLATES))
+        ]
+        paraphrases = [
+            paraphrased_instruction_for_goal(color, variant)
+            for color in colors
+            for variant in range(len(PARAPHRASE_TEMPLATES))
+        ]
+        self.assertTrue(set(training).isdisjoint(paraphrases))
+        vocabulary = build_vocabulary(training)
+        encoded = encode_instructions(paraphrases, vocabulary)
+        self.assertNotIn(vocabulary[UNK_TOKEN], encoded)
 
     def test_rgb_recording_requires_instruction(self) -> None:
         with self.assertRaisesRegex(ValueError, "instruction"):

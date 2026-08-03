@@ -4,5 +4,6 @@ __pycache__/
 *.egg-info/
 *.npz
 /data/
-/checkpoints/
+/checkpoints/*
+!/checkpoints/hierarchical_minivla_final.pt
 .DS_Store

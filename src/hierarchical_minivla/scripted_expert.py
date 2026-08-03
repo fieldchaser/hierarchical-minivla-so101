@@ -21,6 +21,11 @@ INSTRUCTION_TEMPLATES = (
     "Move the {color} block into the container.",
     "Grasp the {color} object and put it in the box.",
 )
+PARAPHRASE_TEMPLATES = (
+    "Place the {color} object in the container.",
+    "Move the {color} cube into the box.",
+    "Put the {color} block in the bin.",
+)
 
 
 def instruction_for_goal(goal_cube: str, variant: int = 0) -> str:
@@ -28,6 +33,14 @@ def instruction_for_goal(goal_cube: str, variant: int = 0) -> str:
     if goal_cube not in ("red", "green", "blue"):
         raise ValueError(f"Unsupported goal cube: {goal_cube}")
     template = INSTRUCTION_TEMPLATES[variant % len(INSTRUCTION_TEMPLATES)]
+    return template.format(color=goal_cube)
+
+
+def paraphrased_instruction_for_goal(goal_cube: str, variant: int = 0) -> str:
+    """Return an unseen template composed only from training-vocabulary words."""
+    if goal_cube not in ("red", "green", "blue"):
+        raise ValueError(f"Unsupported goal cube: {goal_cube}")
+    template = PARAPHRASE_TEMPLATES[variant % len(PARAPHRASE_TEMPLATES)]
     return template.format(color=goal_cube)
 
 

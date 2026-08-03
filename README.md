@@ -2,21 +2,39 @@
 
 A simulation-first research project for language-conditioned, multi-task robotic manipulation. The long-term question is whether explicit skill phases improve data efficiency and generalization over a flat vision-language-action policy.
 
-## Current milestone: Visual DAgger begins correcting layout generalization
+## Current milestone: frozen-policy evaluation on unseen layouts and language
 
-The fixed Round-2 controller scores 0/3 on the first red/green/blue layouts
-outside its training seeds. Its reach head drives all goals toward a familiar
-central Y position, exposing target-localization failure rather than a phase
-gate problem. Visual DAgger Round 3 adds 176 expert corrections on those
-learner-visited states and turns the red replay from failure into a complete
-223-step rollout. Green and blue still fail before lift, so the result is 1/3
-on correction replay and is not an unseen-generalization claim.
+The final Hierarchical MiniVLA is evaluated once on nine new randomized layouts
+(seeds 1900-1908), three colors, and three sentence templates absent from
+training. It completes one blue pick-and-place episode end to end, for **1/9
+(11.1%) success**. Eight episodes issue a close command, but only the successful
+episode physically lifts and aligns the target cube.
 
-Milestone 21 also fixes missing physical settle time in the recovery oracle and
-compares full successful DAgger trajectories against correction-only sampling.
-The full trajectories retain the sole physical success; correction-only falls
-to 0/3. The project therefore keeps both offline and closed-loop metrics instead
-of selecting a checkpoint from either view alone.
+The 1/9 result is reported without another DAgger round. It demonstrates one
+genuine RGB-language-proprioception closed loop while exposing limited visual
+target localization and unsafe phase termination under distribution shift. The
+repository keeps the fixed protocol, complete JSON trace, negative results, and
+training history so the claim remains reproducible rather than selectively
+showing the successful seed.
+
+## Results at a glance
+
+| Frozen-policy evaluation | Result |
+|---|---:|
+| Unseen layouts | 9 |
+| Unseen instruction templates | 3 |
+| Colors | red / green / blue |
+| End-to-end successes | **1/9 (11.1%)** |
+| Episodes issuing close command | 8/9 |
+| Episodes physically lifting cube | 1/9 |
+| Offline phase accuracy | 95.51% |
+| Offline autonomous action MAE | 0.489 mm |
+
+<p align="center">
+  <img src="assets/hierarchical_minivla_success_seed1902.gif" width="384" alt="Hierarchical MiniVLA completing an unseen blue-cube pick-and-place task in MuJoCo">
+</p>
+
+<p align="center"><em>Selected successful rollout: unseen seed 1902 and the unseen instruction “Place the blue object in the container.” Overall frozen-policy performance is 1/9.</em></p>
 
 Milestone 0 began with the smallest useful symbolic contract:
 
@@ -38,7 +56,7 @@ Create an environment and install this repository:
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e .
+python -m pip install -e '.[learn]'
 python -m unittest discover -s tests -v
 python scripts/smoke_baseline.py
 ```
@@ -46,7 +64,7 @@ python scripts/smoke_baseline.py
 To check the upstream multicube simulator, first obtain the ETH course repository, install the optional simulation dependency, and pass the local HW3 path explicitly:
 
 ```bash
-python -m pip install -e '.[sim]'
+python -m pip install -e '.[sim,demo]'
 python scripts/smoke_eth_env.py \
   --eth-hw3 /path/to/ethz-course-2026/hw3_imitation_learning
 ```
@@ -92,7 +110,9 @@ The synthetic scripted expert moves toward the selected cube while the gripper i
 - [x] Run the first three-color unseen-layout closed-loop smoke test
 - [x] Aggregate Visual DAgger corrections from failed layouts
 - [x] Compare full-trajectory and correction-only DAgger sampling
-- [ ] Evaluate unseen layouts and instruction paraphrases
+- [x] Collect the final green/blue corrections and freeze the visual policy
+- [x] Evaluate unseen layouts and instruction paraphrases
+- [x] Package the frozen checkpoint, complete results, and success GIF
 
 ## Upstream attribution and licensing boundary
 
@@ -1407,3 +1427,141 @@ The next round should collect fresh green and blue corrections using the
 settle-aware oracle and the updated learner, then evaluate on new seeds that
 have never entered any DAgger directory. Instruction paraphrases remain a
 separate held-out axis and are not claimed by this milestone.
+
+## Milestone 22: final green/blue corrections and frozen policy
+
+The last data-aggregation round targets only the two layouts that still fail in
+the Round-3 correction replay. The updated learner controls the first 80 reach
+states before the settle-aware scripted oracle takes over:
+
+| Final DAgger collection | Learner states | Total frames | Expert takeover success |
+|---|---:|---:|---:|
+| Seed 1701, green | 80 | 251 | 1/1 |
+| Seed 1702, blue | 80 | 292 | 1/1 |
+| **Total** | **160** | **543** | **2/2** |
+
+The expert labels all 160 learner states as `reach`, while the learner predicts
+137 as reach and 23 as descend. These are policy-visited localization and
+boundary corrections, not extra copies of the original scripted trajectories.
+Because both episodes recover successfully, no retry data are added.
+
+The final candidate keeps the Round-3 full-trajectory sampling strategy. The
+correction-only control from Milestone 21 had better offline error but lost the
+only complete correction-replay rollout, so the project does not select that
+negative control for deployment. The architecture, optimizer, learning rate,
+batch size, validation split, and random seed are unchanged:
+
+```bash
+python scripts/train_hierarchical_minivla.py \
+  --data-dir data/vision/train_30 \
+  --extra-train-dir data/vision/recovery_30_008 \
+  --extra-train-dir data/vision/dagger_round1_seen1609 \
+  --extra-train-dir data/vision/dagger_round2_boundary1609 \
+  --extra-train-dir data/vision/dagger_round3_unseen1700_1702 \
+  --extra-train-dir data/vision/dagger_round3_blue1702 \
+  --extra-train-dir data/vision/dagger_round4_greenblue1701_1702 \
+  --epochs 30 \
+  --batch-size 64 \
+  --learning-rate 0.001 \
+  --device cpu \
+  --seed 0 \
+  --output checkpoints/hierarchical_minivla_final.pt \
+  --metrics-output results/hierarchical_minivla_final_offline.json
+```
+
+Validation loss selects epoch 6. Round 4 expands training from 56 to 58
+episodes and from 12,874 to 13,417 frames, but the original nine-episode
+validation set shows a small regression:
+
+| Fixed held-out metric | Round 3 | Frozen final candidate |
+|---|---:|---:|
+| Phase accuracy | **95.61%** | 95.51% |
+| Teacher-routed action MAE | **0.386 mm** | 0.433 mm |
+| Autonomous-routed action MAE | **0.452 mm** | 0.489 mm |
+| Autonomous reach MAE | **0.936 mm** | 1.094 mm |
+
+This is a useful distinction between imitation metrics and closed-loop utility:
+the added examples deliberately emphasize states induced by a failing policy,
+so they need not improve the original scripted validation distribution. The
+checkpoint is frozen before final evaluation. Seeds 1700-1702 have all entered
+DAgger directories and are correction replays, not unseen results. The final
+protocol therefore moves to fresh seeds and instruction paraphrases and will be
+reported as-is without another training round.
+
+## Milestone 23: frozen evaluation on unseen layouts and paraphrases
+
+The final checkpoint is frozen before evaluation. The test uses seeds
+1900-1908, none of which occur in the base, recovery, or DAgger directories.
+Every color is evaluated under each of three complete templates absent from
+training. The templates reuse known vocabulary so this experiment measures new
+word combinations rather than unknown-token handling:
+
+```text
+Place the {color} object in the container.
+Move the {color} cube into the box.
+Put the {color} block in the bin.
+```
+
+Controller settings, camera, randomization, and action-convergence thresholds
+are fixed from the seen-layout ablation. The nine-episode result is **1/9
+(11.1%)**:
+
+| Goal color | Success | Mean closest reach | Mean closest grasp |
+|---|---:|---:|---:|
+| Red | 0/3 | 25.68 mm | 61.47 mm |
+| Green | 0/3 | 42.51 mm | 87.48 mm |
+| Blue | **1/3** | 33.44 mm | 63.64 mm |
+| **Overall** | **1/9** | **33.88 mm** | **70.86 mm** |
+
+The successful seed 1902 follows the first held-out template, reaches within
+4.30 mm of the reach target and 7.85 mm of the grasp target, lifts the cube to
+96.66 mm, aligns it within 6.61 mm of the bin center, and releases it after 389
+steps. This is the first success on a layout and complete instruction sentence
+that never entered training.
+
+| Furthest physical milestone | Episodes |
+|---|---:|
+| Released successfully | 1 |
+| Near reach | 1 |
+| Close command without lift | 7 |
+
+The controller reaches release in seven episodes and transport in one more,
+but the independently observed physical phase remains reach in eight episodes.
+Mean predicted-versus-observed phase agreement is only 16.07%. In particular,
+action convergence can fire when a phase head settles at the wrong spatial
+location; it detects a stationary command, not task completion. Eight episodes
+therefore close the gripper, yet only one lifts the cube. This separates the
+remaining bottleneck into two coupled failures:
+
+1. the small visual policy does not localize every instructed color reliably
+   across randomized layouts; and
+2. history-aware action convergence resolves perceptual boundary aliasing on a
+   seen rollout but can advance phases prematurely off distribution.
+
+The result is intentionally final: no checkpoint selection, threshold tuning,
+or additional DAgger collection uses seeds 1900-1908. The complete per-step
+traces are stored in
+`results/hierarchical_minivla_final_unseen_paraphrase_1900_9.json`.
+
+## Milestone 24: reproducible GitHub handoff
+
+The selected successful test episode is replayed without changing the frozen
+checkpoint or controller settings. Seed 1902 again completes the blue-cube
+task in 389 steps under the unseen instruction `Place the blue object in the
+container.` The evaluator's optional `--goal-color` flag reproduces the exact
+color assignment when running a single episode, while `--gif-output` records
+the RGB observations already consumed by the policy. Both options are disabled
+by default and do not change prior evaluation behavior.
+
+The resulting GIF contains 196 sampled frames, loops in approximately ten
+seconds, and is 392 KB. It is shown beside the overall 1/9 result rather than as
+an isolated robustness claim. The corresponding trace is stored in
+`results/hierarchical_minivla_final_success_demo_1902.json`.
+
+The repository now includes the 444 KB frozen checkpoint
+`checkpoints/hierarchical_minivla_final.pt`, while all intermediate checkpoints
+and generated datasets remain ignored. A fresh checkout can inspect the exact
+model, final metrics, nine-episode trace, selected success trace, and demo
+without redistributing ETH course assets. The final handoff passes all 46 unit
+tests and performs no additional checkpoint selection or training after the
+unseen evaluation.

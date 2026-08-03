@@ -29,10 +29,33 @@ from hierarchical_minivla.scripted_expert import (
     instruction_for_goal,
     instruction_variant_for_episode,
     is_released_in_bin,
+    paraphrased_instruction_for_goal,
 )
 
 WORKSPACE_LOW = np.array([-0.35, 0.25, 0.045])
 WORKSPACE_HIGH = np.array([0.05, 0.80, 0.25])
+
+
+def save_rollout_gif(
+    frames: list[np.ndarray], path: Path, duration_ms: int
+) -> Path:
+    """Save rendered rollout frames as a looping GIF."""
+    from PIL import Image
+
+    if not frames:
+        raise ValueError("Cannot save an empty rollout GIF")
+    path = path.expanduser().resolve()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    images = [Image.fromarray(np.asarray(frame, dtype=np.uint8)) for frame in frames]
+    images[0].save(
+        path,
+        save_all=True,
+        append_images=images[1:],
+        duration=duration_ms,
+        loop=0,
+        optimize=True,
+    )
+    return path
 
 
 def furthest_milestone(
@@ -88,6 +111,15 @@ def main() -> None:
     parser.add_argument("--render-width", type=int, default=128)
     parser.add_argument("--render-height", type=int, default=128)
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--goal-color", choices=("red", "green", "blue"))
+    parser.add_argument(
+        "--instruction-set",
+        choices=("training", "paraphrase"),
+        default="training",
+    )
+    parser.add_argument("--gif-output", type=Path)
+    parser.add_argument("--gif-stride", type=int, default=2)
+    parser.add_argument("--gif-duration-ms", type=int, default=50)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
@@ -111,6 +143,12 @@ def main() -> None:
         parser.error("--transport-convergence-threshold-mm must be positive")
     if args.trace_every < 1:
         parser.error("--trace-every must be positive")
+    if args.gif_stride < 1:
+        parser.error("--gif-stride must be positive")
+    if args.gif_duration_ms < 1:
+        parser.error("--gif-duration-ms must be positive")
+    if args.gif_output is not None and args.episodes != 1:
+        parser.error("--gif-output requires --episodes 1")
 
     hw3_path = args.eth_hw3.expanduser().resolve()
     xml_path = hw3_path / "so101_gym/assets/so100_multicube_ee.xml"
@@ -125,15 +163,25 @@ def main() -> None:
         args.checkpoint.expanduser().resolve(), map_location=device
     )
     policy.eval()
-    colors = ("red", "green", "blue")
+    colors = (
+        (args.goal_color,)
+        if args.goal_color is not None
+        else ("red", "green", "blue")
+    )
     results = []
+    gif_frames: list[np.ndarray] = []
     for episode_index in range(args.episodes):
         seed = args.seed_start + episode_index
         goal_cube = colors[episode_index % len(colors)]
         instruction_variant = instruction_variant_for_episode(
             episode_index, len(colors)
         )
-        instruction = instruction_for_goal(goal_cube, instruction_variant)
+        if args.instruction_set == "paraphrase":
+            instruction = paraphrased_instruction_for_goal(
+                goal_cube, instruction_variant
+            )
+        else:
+            instruction = instruction_for_goal(goal_cube, instruction_variant)
         tokens = encode_instructions([instruction], vocabulary)[0]
         env = SO100MulticubeSimEnv(
             xml_path=xml_path,
@@ -188,6 +236,8 @@ def main() -> None:
             observation = env.get_obs()
             mocap = env.data.mocap_pos[env.mocap_id].copy()
             frame = env.render_rgb(args.camera)
+            if args.gif_output is not None and (step - 1) % args.gif_stride == 0:
+                gif_frames.append(frame.copy())
             proprio = proprio_from_observation(observation, mocap)
             previous_controller_phase = tracker.current_phase
             delta, gripper, predicted_phase = policy.act(
@@ -304,6 +354,8 @@ def main() -> None:
             success = is_released_in_bin(
                 cube_xyz, bin_xyz, env.get_gripper_angle()
             )
+            if success and args.gif_output is not None:
+                gif_frames.append(env.render_rgb(args.camera).copy())
             if step == 1 or step % args.trace_every == 0 or controller_advanced:
                 rollout_trace.append(
                     {
@@ -375,6 +427,11 @@ def main() -> None:
         )
 
     num_successes = sum(result["success"] for result in results)
+    gif_output = None
+    if args.gif_output is not None:
+        gif_output = save_rollout_gif(
+            gif_frames, args.gif_output, args.gif_duration_ms
+        )
     controller_final_phases = [
         PHASE_NAMES.index(result["controller_final_phase"]) for result in results
     ]
@@ -388,6 +445,9 @@ def main() -> None:
         "success_rate": num_successes / args.episodes,
         "camera": args.camera,
         "device": str(device),
+        "goal_color": args.goal_color,
+        "instruction_set": args.instruction_set,
+        "gif_output": str(args.gif_output) if args.gif_output is not None else None,
         "phase_votes": args.phase_votes,
         "reach_convergence_steps": args.reach_convergence_steps,
         "reach_convergence_threshold_mm": args.reach_convergence_threshold_mm,
